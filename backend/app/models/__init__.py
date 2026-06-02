@@ -2,6 +2,7 @@
 from app.models.business import Business, Supplier
 from app.models.product import Product, InventoryMovement
 from app.models.invoice import Invoice, InvoiceItem
+from app.models.order import Order, OrderItem
 from app.models.insight import Alert, AIInsight
 
 __all__ = [
@@ -11,6 +12,8 @@ __all__ = [
     "InventoryMovement",
     "Invoice",
     "InvoiceItem",
+    "Order",
+    "OrderItem",
     "Alert",
     "AIInsight",
 ]
