@@ -3,6 +3,7 @@ services:
   # ── PostgreSQL ──────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    platform: linux/amd64
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-soukpilot}
@@ -21,6 +22,7 @@ services:
   # ── Redis ───────────────────────────────────────────────
   redis:
     image: redis:7-alpine
+    platform: linux/amd64
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -28,16 +30,18 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 10s
 
-  # ── Chroma (vector store) ───────────────────────────────
-  chromadb:
-    image: chromadb/chroma:latest
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-    volumes:
-      - chroma_data:/chroma/chroma
+  # ── Chroma (vector store) — enabled in Phase 4 (RAG) ────
+  # Uncomment when you reach Phase 4
+  # chromadb:
+  #   image: chromadb/chroma:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - chroma_data:/chroma/chroma
 
   # ── FastAPI Backend ─────────────────────────────────────
   backend:
@@ -49,7 +53,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-soukpilot}:${POSTGRES_PASSWORD:-soukpilot_secret}@postgres:5432/${POSTGRES_DB:-soukpilot_db}
       REDIS_URL: redis://redis:6379/0
-      CHROMA_HOST: chromadb
+      CHROMA_HOST: localhost
       CHROMA_PORT: 8000
     ports:
       - "8080:8080"
@@ -74,7 +78,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-soukpilot}:${POSTGRES_PASSWORD:-soukpilot_secret}@postgres:5432/${POSTGRES_DB:-soukpilot_db}
       REDIS_URL: redis://redis:6379/0
-      CHROMA_HOST: chromadb
+      CHROMA_HOST: localhost
       CHROMA_PORT: 8000
     volumes:
       - ./backend:/app

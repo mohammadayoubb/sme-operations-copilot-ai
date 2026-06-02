@@ -1,6 +1,7 @@
 # Web framework
 fastapi==0.115.5
 uvicorn[standard]==0.32.1
+websockets==11.0.3
 
 # Database
 sqlalchemy==2.0.36
@@ -13,18 +14,20 @@ pydantic-settings==2.6.1
 
 # Background workers
 celery==5.4.0
+vine==5.1.0
+amqp==5.3.1
+kombu==5.4.2
 redis==5.2.1
 
 # AI / LLM
 openai==1.58.1
 
-# OCR
-easyocr==1.7.2
+# OCR — using OpenAI Vision API (eliminates PyTorch/EasyOCR ~1GB dependency)
 Pillow==11.0.0
 pypdf==5.1.0
 
-# Embeddings / Vector store
-chromadb==0.6.3
+# Embeddings / Vector store — enabled in Phase 4
+# chromadb==0.6.3
 
 # ML / Forecasting
 scikit-learn==1.5.2
