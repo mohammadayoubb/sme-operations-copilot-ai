@@ -1,0 +1,47 @@
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# Database
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg2-binary==2.9.10
+
+# Validation
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Background workers
+celery==5.4.0
+redis==5.2.1
+
+# AI / LLM
+openai==1.58.1
+
+# OCR
+easyocr==1.7.2
+Pillow==11.0.0
+pypdf==5.1.0
+
+# Embeddings / Vector store
+chromadb==0.6.3
+
+# ML / Forecasting
+scikit-learn==1.5.2
+pandas==2.2.3
+numpy==2.1.3
+joblib==1.4.2
+
+# Fuzzy matching (order product matching)
+rapidfuzz==3.10.1
+
+# Audio / Voice
+soundfile==0.12.1
+
+# HTTP client
+httpx==0.28.1
+
+# Utilities
+python-multipart==0.0.20
+python-dotenv==1.0.1
+structlog==24.4.0

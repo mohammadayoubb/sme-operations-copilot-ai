@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# ML models
+ml_models/*.pkl
+ml_models/*.joblib
+ml_models/*.h5
+
+# Node
+node_modules/
+frontend/dist/
+frontend/build/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Uploads (dev)
+backend/uploads/
+
+# Alembic
+backend/alembic/versions/*.pyc
+
+.env
