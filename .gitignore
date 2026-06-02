@@ -49,4 +49,9 @@ backend/uploads/
 # Alembic
 backend/alembic/versions/*.pyc
 
+# Celery Beat runtime schedule (auto-generated, not source code)
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat.pid
+
 .env
