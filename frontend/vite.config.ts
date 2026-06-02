@@ -6,6 +6,9 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    // Bind-mounted source on Docker/Windows doesn't emit native FS events,
+    // so poll for changes to keep HMR working.
+    watch: { usePolling: true, interval: 150 },
     proxy: {
       "/api": {
         target: "http://backend:8080",
