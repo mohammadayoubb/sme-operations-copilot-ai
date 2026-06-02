@@ -14,7 +14,10 @@ db_url = os.environ.get("DATABASE_URL")
 if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
 
-target_metadata = None
+import app.models  # registers all ORM models on Base.metadata  # noqa: F401
+from app.core.database import Base
+
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
