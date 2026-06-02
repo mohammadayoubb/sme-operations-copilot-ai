@@ -78,6 +78,31 @@ def last_unit_price(db: Session, product_id: int, exclude_invoice_id: int) -> Op
     return float(row) if row is not None else None
 
 
+def list_products(db: Session, business_id: Optional[int] = None) -> list[Product]:
+    stmt = select(Product).order_by(Product.id)
+    if business_id is not None:
+        stmt = stmt.where(Product.business_id == business_id)
+    return list(db.execute(stmt).scalars().all())
+
+
+def get_product(db: Session, product_id: int) -> Optional[Product]:
+    return db.get(Product, product_id)
+
+
+def price_history(db: Session, product_id: int) -> list[tuple]:
+    """Unit-price history for a product, oldest → newest, from invoice items."""
+    rows = db.execute(
+        select(Invoice.invoice_date, InvoiceItem.unit_price)
+        .join(Invoice, InvoiceItem.invoice_id == Invoice.id)
+        .where(
+            InvoiceItem.product_id == product_id,
+            InvoiceItem.unit_price.is_not(None),
+        )
+        .order_by(Invoice.invoice_date.asc().nullsfirst(), InvoiceItem.id.asc())
+    ).all()
+    return [(d, float(p)) for d, p in rows]
+
+
 def adjust_stock(db: Session, product: Product, delta: float, reason: str, reference_id: int) -> None:
     product.current_stock = (product.current_stock or 0) + delta
     db.add(InventoryMovement(
