@@ -20,11 +20,16 @@ def process_invoice(invoice_id: int) -> dict:
         try:
             result = run(db, invoice_id)
             db.commit()
-            logger.info("process_invoice_done", **result)
+            logger.info(
+                "process_invoice_done",
+                inv_id=result.get("invoice_id"),
+                items=result.get("items"),
+                price_increases=len(result.get("price_increases", [])),
+            )
             return result
-        except Exception as exc:  # noqa: BLE001 — we want to catch all and record
+        except Exception as exc:  # noqa: BLE001
             db.rollback()
-            logger.error("process_invoice_failed", invoice_id=invoice_id, error=str(exc))
+            logger.error("process_invoice_failed", inv_id=invoice_id, err=str(exc))
             invoice = invoice_repo.get(db, invoice_id)
             if invoice is not None:
                 invoice.status = "failed"
