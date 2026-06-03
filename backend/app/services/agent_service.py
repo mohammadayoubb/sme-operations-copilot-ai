@@ -396,6 +396,7 @@ def chat(
             })
 
     # Safety: max iterations reached — ask model to wrap up without tools
+    # (non-streaming path only — streaming path has its own wrap-up below)
     messages.append({
         "role": "user",
         "content": "Please give me your final answer based on what you've found so far.",
@@ -407,3 +408,98 @@ def chat(
     final = (resp.choices[0].message.content or "").strip()
     logger.warning("agent_max_iterations_reached", iterations=iterations)
     return {"response": final, "tool_calls": tool_calls_log}
+
+
+# ── Streaming agent loop ─────────────────────────────────────────────────────
+
+def chat_stream(db: Session, message: str, history: list[dict]):
+    """Streaming version of chat(). Yields SSE-formatted strings.
+
+    SSE event types:
+      tool_start  — a tool is about to be called {tool, args}
+      tool_result — tool finished {tool, result}
+      text        — a streamed answer token {text}
+      done        — stream complete {tool_calls: [...]}
+      error       — guardrail or other error {error}
+    """
+    import json as _json
+
+    message = (message or "").strip()
+    if not message:
+        yield f'data: {_json.dumps({"type": "error", "error": "message cannot be empty"})}\n\n'
+        return
+
+    safe, reason = is_safe_input(message)
+    if not safe:
+        logger.warning("agent_input_blocked", reason=reason)
+        yield f'data: {_json.dumps({"type": "error", "error": f"Input blocked: {reason}"})}\n\n'
+        return
+
+    business = product_repo.get_or_create_default_business(db)
+    business_id = business.id
+
+    messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for h in history:
+        if h.get("role") in ("user", "assistant"):
+            messages.append({"role": h["role"], "content": h["content"]})
+    messages.append({"role": "user", "content": message})
+
+    from app.ai.llm import _client, stream_text
+    from app.core.config import settings
+
+    tool_calls_log: list[dict] = []
+    iterations = 0
+
+    while iterations < MAX_ITERATIONS:
+        iterations += 1
+        # Tool-calling round must be non-streaming so we can parse JSON tool calls.
+        resp = _client().chat.completions.create(
+            model=settings.openai_llm_model,
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",
+        )
+        msg = resp.choices[0].message
+
+        if not msg.tool_calls:
+            # No more tools — stream the final answer token by token.
+            full = ""
+            for token in stream_text(messages, temperature=0.4):
+                full += token
+                yield f'data: {_json.dumps({"type": "text", "text": token})}\n\n'
+            logger.info("agent_response_stream", iterations=iterations,
+                        tools_called=len(tool_calls_log), chars=len(full))
+            yield f'data: {_json.dumps({"type": "done", "tool_calls": tool_calls_log})}\n\n'
+            return
+
+        # Append assistant message (with tool call metadata) to context.
+        messages.append(msg)
+
+        for tc in msg.tool_calls:
+            try:
+                args = _json.loads(tc.function.arguments or "{}")
+            except _json.JSONDecodeError:
+                args = {}
+
+            yield f'data: {_json.dumps({"type": "tool_start", "tool": tc.function.name, "args": args})}\n\n'
+
+            result = _execute_tool(db, business_id, tc.function.name, args)
+            tool_calls_log.append({"tool": tc.function.name, "args": args, "result": result})
+
+            yield f'data: {_json.dumps({"type": "tool_result", "tool": tc.function.name, "result": result})}\n\n'
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": _json.dumps(result, default=str),
+            })
+
+    # Max iterations — stream a wrap-up answer.
+    messages.append({"role": "user",
+                     "content": "Please give me your final answer based on what you've found so far."})
+    full = ""
+    for token in stream_text(messages, temperature=0.4):
+        full += token
+        yield f'data: {_json.dumps({"type": "text", "text": token})}\n\n'
+    logger.warning("agent_max_iterations_reached", iterations=iterations)
+    yield f'data: {_json.dumps({"type": "done", "tool_calls": tool_calls_log})}\n\n'

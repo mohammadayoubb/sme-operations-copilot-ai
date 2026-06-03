@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -10,6 +11,20 @@ from app.services.rag_service import GuardrailError
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/qa", tags=["Q&A"])
+
+
+@router.post("/ask/stream")
+def ask_stream(payload: QARequest, db: Session = Depends(get_db)):
+    """Streaming version — yields sources immediately, then streams the LLM answer."""
+    try:
+        gen = rag_service.ask_stream(db, payload.question, top_k=payload.top_k)
+        return StreamingResponse(gen, media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    except GuardrailError as exc:
+        raise HTTPException(400, str(exc))
+    except Exception as exc:
+        logger.error("qa_stream_failed", err=str(exc))
+        raise HTTPException(502, f"Stream failed: {exc}")
 
 
 @router.post("/ask", response_model=QAResponse)

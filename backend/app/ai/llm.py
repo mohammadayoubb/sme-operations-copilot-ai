@@ -40,6 +40,20 @@ def complete_json(prompt: str, *, temperature: float = 0.0) -> str:
     return content
 
 
+def stream_text(messages: list[dict], *, temperature: float = 0.4):
+    """Stream a chat completion. Yields string token chunks."""
+    stream = _client().chat.completions.create(
+        model=settings.openai_llm_model,
+        messages=messages,
+        temperature=temperature,
+        stream=True,
+    )
+    for chunk in stream:
+        text = chunk.choices[0].delta.content
+        if text:
+            yield text
+
+
 def complete_text(prompt: str, *, temperature: float = 0.4) -> str:
     """Free-form text completion (used for business explanations/reports)."""
     resp = _client().chat.completions.create(

@@ -2,6 +2,8 @@ import { useState } from "react";
 import PageShell from "../components/PageShell";
 import { qaApi } from "../services/api";
 
+const BASE = (import.meta.env.VITE_API_URL as string) ?? "";
+
 const EXAMPLE_QUESTIONS = [
   "Which supplier increased prices the most this month?",
   "Which product made the most profit this week?",
@@ -28,6 +30,7 @@ interface Answer {
   grounded: boolean;
   sources: Source[];
   retrieval_stats: RetrievalStats;
+  streaming?: boolean;
 }
 
 export default function BusinessQA() {
@@ -45,11 +48,59 @@ export default function BusinessQA() {
     setNotice(null);
     setResult(null);
     setBusy(true);
+
     try {
-      const { data } = await qaApi.ask(query);
-      setResult(data);
+      const res = await fetch(`${BASE}/api/qa/ask/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: query }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+        throw new Error(err.detail ?? `HTTP ${res.status}`);
+      }
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let partial: Answer = { answer: "", grounded: false, sources: [], retrieval_stats: {}, streaming: true };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop() ?? "";
+
+        for (const part of parts) {
+          if (!part.startsWith("data: ")) continue;
+          let event: Record<string, unknown>;
+          try { event = JSON.parse(part.slice(6)); } catch { continue; }
+
+          if (event.type === "sources") {
+            partial = {
+              ...partial,
+              grounded: event.grounded as boolean,
+              sources: event.sources as Source[],
+              retrieval_stats: event.retrieval_stats as RetrievalStats,
+            };
+            setResult({ ...partial });
+          } else if (event.type === "text") {
+            partial = { ...partial, answer: partial.answer + (event.text as string) };
+            setResult({ ...partial });
+          } else if (event.type === "no_data") {
+            setResult({ answer: event.answer as string, grounded: false, sources: [], retrieval_stats: {}, streaming: false });
+          } else if (event.type === "error") {
+            throw new Error(event.error as string);
+          }
+        }
+      }
+
+      // Mark streaming done
+      setResult((r) => r ? { ...r, streaming: false } : r);
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? "Could not answer the question.");
+      setError(e?.message ?? "Could not answer the question.");
     } finally {
       setBusy(false);
     }
@@ -121,10 +172,11 @@ export default function BusinessQA() {
                 </span>
               </div>
             </div>
-            {statsLine && (
-              <p style={styles.statsLine}>{statsLine}</p>
-            )}
-            <p style={styles.answerText}>{result.answer}</p>
+            {statsLine && <p style={styles.statsLine}>{statsLine}</p>}
+            <p style={styles.answerText}>
+              {result.answer || <span style={{ color: "var(--text-muted)" }}>Retrieving sources…</span>}
+              {result.streaming && result.answer && <span style={styles.cursor}>▌</span>}
+            </p>
           </div>
 
           {result.sources.length > 0 && (
@@ -145,11 +197,13 @@ export default function BusinessQA() {
           )}
         </div>
       ) : (
-        <div style={styles.emptyState}>
-          Ask a question above to see a grounded AI answer with source references here.
-          <br />
-          <span style={styles.hint}>Tip: click "Reindex data" first if you've added new invoices or orders.</span>
-        </div>
+        !busy && (
+          <div style={styles.emptyState}>
+            Ask a question above to see a grounded AI answer with source references here.
+            <br />
+            <span style={styles.hint}>Tip: click "Reindex data" first if you've added new invoices or orders.</span>
+          </div>
+        )
       )}
     </PageShell>
   );
@@ -174,7 +228,8 @@ const styles: Record<string, React.CSSProperties> = {
   hybridBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: "#6366f122", color: "#818cf8" },
   groundBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100 },
   statsLine: { fontSize: 11, color: "var(--text-muted)", margin: "0 0 10px", letterSpacing: "0.2px" },
-  answerText: { fontSize: 14, lineHeight: 1.6 },
+  answerText: { fontSize: 14, lineHeight: 1.6, minHeight: 22 },
+  cursor: { display: "inline-block", animation: "blink 1s step-end infinite", marginLeft: 1 },
   sourcesTitle: { fontWeight: 600, marginBottom: 12, fontSize: 14 },
   sources: { display: "flex", flexDirection: "column", gap: 10 },
   sourceCard: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 16px" },

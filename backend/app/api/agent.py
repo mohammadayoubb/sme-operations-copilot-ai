@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,21 @@ class ToolCallLog(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     tool_calls: list[ToolCallLog]
+
+
+@router.post("/chat/stream")
+def agent_chat_stream(body: ChatRequest, db: Session = Depends(get_db)):
+    """Streaming version — yields SSE events as the agent thinks and calls tools."""
+    try:
+        gen = agent_service.chat_stream(
+            db,
+            message=body.message,
+            history=[h.model_dump() for h in body.history],
+        )
+        return StreamingResponse(gen, media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.post("/chat", response_model=ChatResponse)

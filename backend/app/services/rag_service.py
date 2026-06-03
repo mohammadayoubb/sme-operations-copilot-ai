@@ -145,6 +145,85 @@ def index_all(db: Session, business_id: Optional[int] = None) -> dict:
     return {"status": "indexed", "documents_indexed": len(collected), "chunks_indexed": len(texts)}
 
 
+def ask_stream(db: Session, question: str, top_k: int = 5):
+    """Streaming version of ask(). Yields SSE-formatted strings.
+
+    SSE event types:
+      sources  — retrieval complete {sources, grounded, retrieval_stats}
+      text     — a streamed answer token {text}
+      no_data  — nothing was retrieved {answer}
+      error    — guardrail blocked {error}
+    """
+    import json as _json
+
+    question = (question or "").strip()
+    if not question:
+        yield f'data: {_json.dumps({"type": "error", "error": "question cannot be empty"})}\n\n'
+        return
+
+    safe, reason = guardrails.is_safe_input(question)
+    if not safe:
+        logger.warning("qa_question_blocked", reason=reason)
+        yield f'data: {_json.dumps({"type": "error", "error": reason or "Question rejected by guardrails."})}\n\n'
+        return
+
+    hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k)
+
+    if not hits:
+        yield f'data: {_json.dumps({"type": "no_data", "answer": rag.NO_DATA_ANSWER})}\n\n'
+        return
+
+    # Parent lookup
+    seen_parents: dict[tuple, str] = {}
+    for h in hits:
+        meta = h.get("metadata") or {}
+        st, sid = meta.get("source_type"), meta.get("source_id")
+        if st and sid and (st, sid) not in seen_parents:
+            doc = db.execute(
+                select(Document).where(
+                    Document.source_type == st,
+                    Document.source_id == sid,
+                )
+            ).scalars().first()
+            seen_parents[(st, sid)] = doc.content if doc else h.get("document", "")
+
+    unique_texts = list(dict.fromkeys(seen_parents.values()))
+    context = rag.build_context([{"document": t} for t in unique_texts])
+
+    sources: list[dict] = []
+    seen_keys: set[tuple] = set()
+    for h in hits:
+        meta = h.get("metadata") or {}
+        st, sid = meta.get("source_type"), meta.get("source_id")
+        key = (st, sid)
+        if key not in seen_keys:
+            seen_keys.add(key)
+            dist = h.get("distance")
+            sources.append({
+                "source_type": st,
+                "source_id": sid,
+                "content": seen_parents.get(key, h.get("document", "")),
+                "score": round(1.0 - float(dist), 4) if dist is not None else None,
+            })
+
+    retrieval_stats["parents_shown"] = len(sources)
+
+    # Emit sources immediately so the UI can show them before the answer starts.
+    yield f'data: {_json.dumps({"type": "sources", "sources": sources, "grounded": True, "retrieval_stats": retrieval_stats})}\n\n'
+
+    # Stream LLM generation.
+    from app.ai.prompts import RAG_QA_PROMPT
+    from app.ai.llm import stream_text
+
+    prompt = RAG_QA_PROMPT.format(context=context, question=question)
+    full = ""
+    for token in stream_text([{"role": "user", "content": prompt}]):
+        full += token
+        yield f'data: {_json.dumps({"type": "text", "text": token})}\n\n'
+
+    logger.info("qa_answered_stream", grounded=True, sources=len(sources), chars=len(full))
+
+
 def ask(db: Session, question: str, top_k: int = 5) -> dict:
     """Guardrail → hybrid retrieval → parent lookup → grounded generation."""
     question = (question or "").strip()
