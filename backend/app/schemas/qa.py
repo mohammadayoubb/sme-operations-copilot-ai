@@ -22,6 +22,7 @@ class QAResponse(BaseModel):
     answer: str
     grounded: bool                         # False when no evidence was found
     sources: list[QASource] = []
+    retrieval_stats: dict = {}             # {"candidates": 15, "reranked": True, "parents_shown": 5}
 
 
 class IndexResponse(BaseModel):

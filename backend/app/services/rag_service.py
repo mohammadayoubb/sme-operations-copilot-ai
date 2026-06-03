@@ -2,8 +2,15 @@
 
 Indexing turns the owner's structured business data (invoices, orders, products +
 sales) into plain-text summary documents, stores them in the `documents` table,
-then chunks + embeds them into the vector store. Ask runs guardrails, then the
-retrieve → ground → answer flow in `app.ai.rag`.
+then chunks + embeds them into the vector store.
+
+Parent-child chunking: the full document text (parent) lives in the `documents`
+DB table. Small 400-char child chunks are stored in the vector store for precise
+retrieval. On Q&A, we retrieve child hits, look up their parents, and pass the
+full parent text to the LLM for richer context.
+
+Ask runs guardrails, then hybrid retrieval (vector + BM25 rerank) → parent
+lookup → grounded generation.
 """
 from __future__ import annotations
 
@@ -97,7 +104,11 @@ def _collect_documents(db: Session, business_id: int) -> list[tuple[str, int, st
 # ── Public service API ───────────────────────────────────────────────
 
 def index_all(db: Session, business_id: Optional[int] = None) -> dict:
-    """(Re)build the document table + vector index from current business data."""
+    """(Re)build the document table + vector index from current business data.
+
+    Uses parent-child chunking: full document text stored in the `documents` DB
+    table (parent), small 400-char chunks embedded in the vector store (children).
+    """
     business = product_repo.get_or_create_default_business(db)
     bid = business_id or business.id
 
@@ -107,12 +118,14 @@ def index_all(db: Session, business_id: Optional[int] = None) -> dict:
 
     collected = _collect_documents(db, bid)
 
-    # Persist document rows, then chunk + embed each.
     ids, texts, metadatas = [], [], []
     for source_type, source_id, content in collected:
+        # Parent stored in DB for full-text lookup during Q&A.
         doc = Document(business_id=bid, source_type=source_type, source_id=source_id, content=content)
         db.add(doc)
-        db.flush()  # need doc.id
+        db.flush()
+
+        # Children: small chunks for precise vector retrieval.
         for ci, chunk in enumerate(rag.chunk_text(content)):
             ids.append(f"{source_type}:{source_id}:{ci}")
             texts.append(chunk)
@@ -133,7 +146,7 @@ def index_all(db: Session, business_id: Optional[int] = None) -> dict:
 
 
 def ask(db: Session, question: str, top_k: int = 5) -> dict:
-    """Guardrail the question, then run the grounded RAG flow."""
+    """Guardrail → hybrid retrieval → parent lookup → grounded generation."""
     question = (question or "").strip()
     if not question:
         raise ValueError("question cannot be empty")
@@ -143,6 +156,59 @@ def ask(db: Session, question: str, top_k: int = 5) -> dict:
         logger.warning("qa_question_blocked", reason=reason)
         raise GuardrailError(reason or "Question rejected by guardrails.")
 
-    result = rag.answer_question(question, top_k=top_k)
-    logger.info("qa_answered", grounded=result["grounded"], sources=len(result["sources"]))
-    return result
+    # Hybrid retrieval: vector search × 3 candidates → BM25 rerank via RRF.
+    hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k)
+
+    if not hits:
+        return {
+            "answer": rag.NO_DATA_ANSWER,
+            "grounded": False,
+            "sources": [],
+            "retrieval_stats": retrieval_stats,
+        }
+
+    # Parent lookup: fetch full document text from DB for richer LLM context.
+    seen_parents: dict[tuple, str] = {}
+    for h in hits:
+        meta = h.get("metadata") or {}
+        st, sid = meta.get("source_type"), meta.get("source_id")
+        if st and sid and (st, sid) not in seen_parents:
+            doc = db.execute(
+                select(Document).where(
+                    Document.source_type == st,
+                    Document.source_id == sid,
+                )
+            ).scalars().first()
+            seen_parents[(st, sid)] = doc.content if doc else h.get("document", "")
+
+    # Unique parent texts in hit order (dict preserves insertion order, Python 3.7+).
+    unique_texts = list(dict.fromkeys(seen_parents.values()))
+    context = rag.build_context([{"document": t} for t in unique_texts])
+    answer = rag.generate_answer(question, context)
+
+    # One source entry per unique parent, ordered by first child hit.
+    sources: list[dict] = []
+    seen_keys: set[tuple] = set()
+    for h in hits:
+        meta = h.get("metadata") or {}
+        st, sid = meta.get("source_type"), meta.get("source_id")
+        key = (st, sid)
+        if key not in seen_keys:
+            seen_keys.add(key)
+            dist = h.get("distance")
+            sources.append({
+                "source_type": st,
+                "source_id": sid,
+                "content": seen_parents.get(key, h.get("document", "")),
+                "score": round(1.0 - float(dist), 4) if dist is not None else None,
+            })
+
+    retrieval_stats["parents_shown"] = len(sources)
+    logger.info("qa_answered", grounded=True, sources=len(sources), **retrieval_stats)
+
+    return {
+        "answer": answer,
+        "grounded": True,
+        "sources": sources,
+        "retrieval_stats": retrieval_stats,
+    }
