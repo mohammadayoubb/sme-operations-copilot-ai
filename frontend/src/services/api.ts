@@ -43,6 +43,7 @@ export const forecastApi = {
 
 export const qaApi = {
   ask: (question: string) => http.post("/api/qa/ask", { question }),
+  index: () => http.post("/api/qa/index"),
 };
 
 export const reportsApi = {
