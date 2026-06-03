@@ -7,6 +7,7 @@ import PricingAdvisor from "./pages/PricingAdvisor";
 import BusinessQA from "./pages/BusinessQA";
 import Reports from "./pages/Reports";
 import VoiceAssistant from "./pages/VoiceAssistant";
+import AgentChat from "./pages/AgentChat";
 
 const NAV = [
   { to: "/",          label: "Dashboard",      icon: "▦" },
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/qa",        label: "Business Q&A",    icon: "💬" },
   { to: "/reports",   label: "Reports",         icon: "📊" },
   { to: "/voice",     label: "Voice",           icon: "🎙" },
+  { to: "/agent",     label: "AI Agent",        icon: "🤖" },
 ];
 
 export default function App() {
@@ -58,6 +60,7 @@ export default function App() {
             <Route path="/qa"        element={<BusinessQA />} />
             <Route path="/reports"   element={<Reports />} />
             <Route path="/voice"     element={<VoiceAssistant />} />
+            <Route path="/agent"     element={<AgentChat />} />
           </Routes>
         </main>
       </div>

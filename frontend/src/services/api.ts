@@ -52,6 +52,11 @@ export const reportsApi = {
   generate: () => http.post("/api/reports/generate"),
 };
 
+export const agentApi = {
+  chat: (message: string, history: { role: string; content: string }[]) =>
+    http.post("/api/agent/chat", { message, history }),
+};
+
 export const voiceApi = {
   transcribe: (file: File) => {
     const fd = new FormData();
