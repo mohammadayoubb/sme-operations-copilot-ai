@@ -50,6 +50,7 @@ export default function Reports() {
   const [latest, setLatest] = useState<Report | null>(null);
   const [history, setHistory] = useState<ReportRow[]>([]);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -66,6 +67,25 @@ export default function Reports() {
   }
 
   useEffect(() => { load(); }, []);
+
+  async function exportPdf() {
+    if (!latest) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const { data } = await reportsApi.exportPdf(latest.id);
+      const url = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `soukpilot-report-${latest.period_start ?? latest.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("PDF export failed.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function generate() {
     setError(null);
@@ -89,6 +109,15 @@ export default function Reports() {
         <button style={{ ...styles.btn, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={generate}>
           {busy ? "Generating…" : "Generate Report Now"}
         </button>
+        {latest && (
+          <button
+            style={{ ...styles.exportBtn, opacity: exporting ? 0.6 : 1 }}
+            disabled={exporting}
+            onClick={exportPdf}
+          >
+            {exporting ? "Exporting…" : "⬇ Export PDF"}
+          </button>
+        )}
       </div>
 
       {error && <div style={styles.errorBanner}>⚠ {error}</div>}
@@ -183,8 +212,9 @@ export default function Reports() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  toolbar: { marginBottom: 24 },
+  toolbar: { marginBottom: 24, display: "flex", gap: 12, alignItems: "center" },
   btn: { background: "var(--accent)", color: "#fff", border: "none", borderRadius: 6, padding: "10px 24px", fontWeight: 600, fontSize: 14 },
+  exportBtn: { background: "var(--surface)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "10px 20px", fontWeight: 600, fontSize: 14, cursor: "pointer" },
   errorBanner: { background: "#ef444418", border: "1px solid #ef444444", borderRadius: "var(--radius)", padding: "12px 16px", marginBottom: 20, color: "var(--danger)", fontSize: 13 },
   reportCard: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "20px 22px", marginBottom: 20 },
   reportHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },

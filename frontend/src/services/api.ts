@@ -50,6 +50,8 @@ export const reportsApi = {
   list: () => http.get("/api/reports/"),
   latest: () => http.get("/api/reports/latest"),
   generate: () => http.post("/api/reports/generate"),
+  exportPdf: (id: number) =>
+    http.get(`/api/reports/${id}/pdf`, { responseType: "blob" }),
 };
 
 export const agentApi = {
