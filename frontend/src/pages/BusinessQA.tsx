@@ -16,10 +16,18 @@ interface Source {
   score: number | null;
 }
 
+interface RetrievalStats {
+  candidates?: number;
+  reranked?: boolean;
+  returned?: number;
+  parents_shown?: number;
+}
+
 interface Answer {
   answer: string;
   grounded: boolean;
   sources: Source[];
+  retrieval_stats: RetrievalStats;
 }
 
 export default function BusinessQA() {
@@ -61,6 +69,11 @@ export default function BusinessQA() {
     }
   }
 
+  const stats = result?.retrieval_stats;
+  const statsLine = stats && stats.candidates != null
+    ? `${stats.candidates} candidates · BM25 reranked · ${stats.parents_shown ?? stats.returned} sources`
+    : null;
+
   return (
     <PageShell title="Business Q&A" subtitle="Ask any question about your business data — answers are grounded in your actual invoices, orders, and sales">
       <div style={styles.card}>
@@ -99,10 +112,18 @@ export default function BusinessQA() {
           <div style={styles.answerCard}>
             <div style={styles.answerHeader}>
               <span style={styles.answerTitle}>Answer</span>
-              <span style={{ ...styles.groundBadge, background: result.grounded ? "#22c55e22" : "#f59e0b22", color: result.grounded ? "#22c55e" : "#f59e0b" }}>
-                {result.grounded ? "GROUNDED" : "NO DATA"}
-              </span>
+              <div style={styles.badges}>
+                {result.retrieval_stats?.reranked && (
+                  <span style={styles.hybridBadge}>HYBRID</span>
+                )}
+                <span style={{ ...styles.groundBadge, background: result.grounded ? "#22c55e22" : "#f59e0b22", color: result.grounded ? "#22c55e" : "#f59e0b" }}>
+                  {result.grounded ? "GROUNDED" : "NO DATA"}
+                </span>
+              </div>
             </div>
+            {statsLine && (
+              <p style={styles.statsLine}>{statsLine}</p>
+            )}
             <p style={styles.answerText}>{result.answer}</p>
           </div>
 
@@ -127,7 +148,7 @@ export default function BusinessQA() {
         <div style={styles.emptyState}>
           Ask a question above to see a grounded AI answer with source references here.
           <br />
-          <span style={styles.hint}>Tip: click “Reindex data” first if you’ve added new invoices or orders.</span>
+          <span style={styles.hint}>Tip: click "Reindex data" first if you've added new invoices or orders.</span>
         </div>
       )}
     </PageShell>
@@ -147,9 +168,12 @@ const styles: Record<string, React.CSSProperties> = {
   errorBanner: { background: "#ef444418", border: "1px solid #ef444444", borderRadius: "var(--radius)", padding: "12px 16px", marginBottom: 20, color: "var(--danger)", fontSize: 13 },
   section: { marginBottom: 28 },
   answerCard: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "18px 20px", marginBottom: 20 },
-  answerHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  answerHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   answerTitle: { fontWeight: 700, fontSize: 14 },
+  badges: { display: "flex", gap: 6, alignItems: "center" },
+  hybridBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100, background: "#6366f122", color: "#818cf8" },
   groundBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 100 },
+  statsLine: { fontSize: 11, color: "var(--text-muted)", margin: "0 0 10px", letterSpacing: "0.2px" },
   answerText: { fontSize: 14, lineHeight: 1.6 },
   sourcesTitle: { fontWeight: 600, marginBottom: 12, fontSize: 14 },
   sources: { display: "flex", flexDirection: "column", gap: 10 },
