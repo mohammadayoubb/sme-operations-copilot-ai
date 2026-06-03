@@ -121,9 +121,9 @@ No schema change, no new dependencies, no Docker rebuild.
 
 ## 7. How It Was Tested
 
-### Automated — 6 tests (37 total, all passing)
+### Automated — 6 tests (31 total, all passing)
 ```bash
-cd backend && python -m pytest -q   # 31 (Phases 1–3) + 6 RAG = 37 passed
+cd backend && python -m pytest -q   # 25 (Phases 1–3) + 6 RAG = 31 passed
 ```
 Covers: short/long/empty chunking, numbered context building, the guaranteed
 refusal path (LLM not called), and source mapping (similarity = 1 − distance).
