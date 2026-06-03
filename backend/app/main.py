@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api import health, invoices, orders, products, pricing, forecast, qa, reports, voice
+from app.api import health, invoices, orders, products, pricing, forecast, qa, reports, voice, agent
 
 setup_logging()
 
@@ -30,3 +30,4 @@ app.include_router(forecast.router)
 app.include_router(qa.router)
 app.include_router(reports.router)
 app.include_router(voice.router)
+app.include_router(agent.router)
