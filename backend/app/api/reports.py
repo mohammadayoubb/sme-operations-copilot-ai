@@ -42,12 +42,11 @@ def export_report_pdf(report_id: int, db: Session = Depends(get_db)):
         raise HTTPException(502, f"PDF generation failed: {exc}")
 
     period = f"{report.period_start}-{report.period_end}" if report.period_start else str(report_id)
-    filename = f"soukpilot-report-{period}.pdf"
-    logger.info("pdf_exported", report_id=report_id, bytes=len(pdf_bytes))
+    logger.info("report_exported_html", report_id=report_id, bytes=len(pdf_bytes))
     return Response(
         content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        media_type="text/html; charset=utf-8",
+        headers={"Content-Disposition": f'inline; filename="soukpilot-report-{period}.html"'},
     )
 
 

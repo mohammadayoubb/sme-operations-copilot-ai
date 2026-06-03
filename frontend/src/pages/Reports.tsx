@@ -74,14 +74,13 @@ export default function Reports() {
     setError(null);
     try {
       const { data } = await reportsApi.exportPdf(latest.id);
-      const url = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `soukpilot-report-${latest.period_start ?? latest.id}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const blob = new Blob([data], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      // Give the new tab time to load before revoking
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch {
-      setError("PDF export failed.");
+      setError("Export failed.");
     } finally {
       setExporting(false);
     }
