@@ -5,6 +5,7 @@ from app.models.invoice import Invoice, InvoiceItem
 from app.models.order import Order, OrderItem
 from app.models.sales import Sale
 from app.models.document import Document
+from app.models.report import Report
 from app.models.insight import Alert, AIInsight
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "OrderItem",
     "Sale",
     "Document",
+    "Report",
     "Alert",
     "AIInsight",
 ]
