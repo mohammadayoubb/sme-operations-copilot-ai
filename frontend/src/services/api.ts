@@ -59,6 +59,10 @@ export const agentApi = {
     http.post("/api/agent/chat", { message, history }),
 };
 
+export const anomalyApi = {
+  alerts: () => http.get("/api/anomaly/alerts"),
+};
+
 export const voiceApi = {
   transcribe: (file: File) => {
     const fd = new FormData();

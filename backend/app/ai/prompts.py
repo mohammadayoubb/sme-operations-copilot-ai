@@ -66,6 +66,18 @@ Data:
 Write in simple, direct language.
 """
 
+ANOMALY_EXPLANATION_PROMPT = """\
+You are a business analyst for a Lebanese small business. The system detected unusual sales patterns.
+For each anomaly below, write ONE plain-language sentence explaining what it likely means for the owner.
+Be specific: mention the product, the direction, and a practical implication or action.
+
+Anomalies:
+{anomaly_list}
+
+Respond with ONLY valid JSON: {{"explanations": ["sentence 1", "sentence 2", ...]}}
+One explanation per anomaly, in the same order.
+"""
+
 VOICE_COMMAND_PROMPT = """\
 You are a voice command interpreter for a Lebanese small business. The owner just spoke a command.
 Extract the intent and parameters as valid JSON only.

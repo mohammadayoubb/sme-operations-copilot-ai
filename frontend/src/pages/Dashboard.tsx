@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
-import { forecastApi, invoicesApi, ordersApi, productsApi, reportsApi } from "../services/api";
+import { anomalyApi, forecastApi, invoicesApi, ordersApi, productsApi, reportsApi } from "../services/api";
 
 interface Product { id: number; name: string; current_stock: number | null; reorder_level: number | null; }
 interface OrderRow { id: number; status: string; }
 interface InvoiceRow { id: number; invoice_date: string | null; invoice_total: number | null; currency: string | null; status: string; }
 interface Forecast { product_id: number; product_name: string; current_stock: number; days_until_stockout: number | null; reorder_by_date: string | null; }
 interface LatestReport { data_json: { sales: { this_week: number; change_pct: number | null }; profit: { this_week: number; change_pct: number | null } } | null; }
+interface AnomalyAlert { product_name: string; anomaly_date: string; direction: string; actual_qty: number; expected_qty: number; pct_deviation: number; explanation: string; }
 
 function ChangeBadge({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return null;
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [reorders, setReorders] = useState<Forecast[]>([]);
   const [report, setReport] = useState<LatestReport | null>(null);
+  const [anomalies, setAnomalies] = useState<AnomalyAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +49,14 @@ export default function Dashboard() {
           setReport(r.data);
         } catch {
           /* no report yet — stat cards show "—" */
+        }
+
+        // Anomaly alerts — non-blocking, best-effort
+        try {
+          const a = await anomalyApi.alerts();
+          setAnomalies(a.data.alerts ?? []);
+        } catch {
+          /* anomaly scan failed — panel stays hidden */
         }
       } catch (e: any) {
         setError(e?.response?.data?.detail ?? "Failed to load dashboard data.");
@@ -176,6 +186,34 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Anomaly Alerts */}
+      {anomalies.length > 0 && (
+        <div style={styles.panel}>
+          <h3 style={styles.panelTitle}>
+            AI Anomaly Alerts
+            <span style={styles.anomalyBadge}>{anomalies.length} detected</span>
+          </h3>
+          <div style={styles.anomalyList}>
+            {anomalies.slice(0, 4).map((a, i) => (
+              <div key={i} style={styles.anomalyRow}>
+                <div style={styles.anomalyLeft}>
+                  <span style={{ ...styles.anomalyIcon, color: a.direction === "spike" ? "#f59e0b" : "#ef4444" }}>
+                    {a.direction === "spike" ? "↑" : "↓"}
+                  </span>
+                  <div>
+                    <span style={styles.anomalyName}>{a.product_name}</span>
+                    <span style={styles.anomalyMeta}>
+                      {a.anomaly_date} · {a.direction} {a.pct_deviation.toFixed(0)}% · sold {a.actual_qty} vs {a.expected_qty} expected
+                    </span>
+                  </div>
+                </div>
+                <p style={styles.anomalyExplanation}>{a.explanation}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 }
@@ -214,4 +252,12 @@ const styles: Record<string, React.CSSProperties> = {
   alertMeta: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 },
   reorderBadge: { background: "#ef444422", color: "#ef4444", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 100 },
   alertDate: { color: "var(--text-muted)", fontSize: 11 },
+  anomalyBadge: { marginLeft: 10, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: "#f59e0b22", color: "#f59e0b" },
+  anomalyList: { display: "flex", flexDirection: "column", gap: 12 },
+  anomalyRow: { padding: "12px 14px", background: "var(--surface2)", borderRadius: 6, border: "1px solid var(--border)" },
+  anomalyLeft: { display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 6 },
+  anomalyIcon: { fontSize: 18, fontWeight: 700, lineHeight: 1, marginTop: 1 },
+  anomalyName: { fontWeight: 600, fontSize: 13, display: "block" },
+  anomalyMeta: { fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 2 },
+  anomalyExplanation: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginLeft: 28 },
 };
