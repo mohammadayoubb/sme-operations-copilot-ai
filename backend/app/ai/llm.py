@@ -5,6 +5,9 @@ from __future__ import annotations
 from functools import lru_cache
 
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @lru_cache(maxsize=1)
@@ -24,7 +27,17 @@ def complete_json(prompt: str, *, temperature: float = 0.0) -> str:
         response_format={"type": "json_object"},
         temperature=temperature,
     )
-    return resp.choices[0].message.content or "{}"
+    content = resp.choices[0].message.content or "{}"
+    logger.info(
+        "llm_complete_json",
+        model=settings.openai_llm_model,
+        temperature=temperature,
+        prompt_chars=len(prompt),
+        response_chars=len(content),
+        prompt_tokens=getattr(resp.usage, "prompt_tokens", None),
+        completion_tokens=getattr(resp.usage, "completion_tokens", None),
+    )
+    return content
 
 
 def complete_text(prompt: str, *, temperature: float = 0.4) -> str:
@@ -34,4 +47,14 @@ def complete_text(prompt: str, *, temperature: float = 0.4) -> str:
         messages=[{"role": "user", "content": prompt}],
         temperature=temperature,
     )
-    return (resp.choices[0].message.content or "").strip()
+    content = (resp.choices[0].message.content or "").strip()
+    logger.info(
+        "llm_complete_text",
+        model=settings.openai_llm_model,
+        temperature=temperature,
+        prompt_chars=len(prompt),
+        response_chars=len(content),
+        prompt_tokens=getattr(resp.usage, "prompt_tokens", None),
+        completion_tokens=getattr(resp.usage, "completion_tokens", None),
+    )
+    return content

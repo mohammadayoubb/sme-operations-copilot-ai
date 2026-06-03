@@ -5,7 +5,10 @@ from pydantic import BaseModel
 
 from app.ai.llm import _client, complete_json
 from app.ai.prompts import VOICE_COMMAND_PROMPT
+from app.core.logging import get_logger
 from app.security.guardrails import is_safe_input
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/voice", tags=["Voice"])
 
@@ -49,8 +52,10 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         )
         transcript = resp.text.strip()
     except Exception as e:
+        logger.error("voice_transcription_failed", error=str(e), ext=ext)
         raise HTTPException(502, f"Transcription failed: {str(e)}")
 
+    logger.info("voice_transcribed", chars=len(transcript), ext=ext)
     return TranscribeResponse(transcript=transcript)
 
 
@@ -78,4 +83,5 @@ def process_voice_command(body: CommandRequest):
     if not isinstance(params, dict):
         params = {}
 
+    logger.info("voice_command_parsed", intent=intent, params_keys=list(params.keys()))
     return CommandResponse(transcript=transcript, intent=intent, params=params)
