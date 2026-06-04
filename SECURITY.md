@@ -28,8 +28,9 @@ de-scoped for the capstone — the API runs in a trusted Docker network.
 
 Applied to **every user-supplied string** before it reaches any LLM:
 - Order messages (`POST /api/orders/extract`)
-- QA questions (`POST /api/qa/ask`)
-- Voice transcripts (`POST /api/voice/command`)
+- QA questions (`POST /api/qa/ask`, `POST /api/qa/ask/stream`)
+- Agent chat messages (`POST /api/agent/chat`, `POST /api/agent/chat/stream`)
+- Voice transcripts (`POST /api/voice/command`, routed to agent)
 
 ```python
 INJECTION_PATTERNS = [
@@ -109,6 +110,13 @@ This guarantees: **no unvalidated data from an LLM ever reaches the database**.
 1. Extension whitelist: `{.mp3, .mp4, .mpeg, .mpga, .m4a, .wav, .webm, .ogg, .flac}`
 2. Size limit: 25 MB (Whisper API limit)
 
+`POST /api/voice/speak`:
+1. Accepts only `{"text": "..."}` — no file upload
+2. Input length capped at 4 096 characters before reaching the TTS API
+3. The text sent to TTS is the agent's own output, not raw user input, so it
+   has already passed through the agent's tool loop and is not an injection
+   vector. No additional guardrail scan is applied to TTS input.
+
 ---
 
 ## The No-LLM-Arithmetic Rule
@@ -134,6 +142,25 @@ call.
 - `.env` is in `.gitignore`.
 - CORS is configured to allow only `localhost:5173` and `localhost:3000` in
   development (`ALLOWED_ORIGINS` env var).
+
+---
+
+## Agentic Tool-Call Security
+
+The agent (`agent_service.py`) runs a GPT-4o tool-calling loop. Security
+properties:
+
+- **Read-only by default**: six of seven tools only SELECT from the database.
+  No data is mutated.
+- **One write tool** (`create_order`): routes through the existing
+  `order_service` pipeline — guardrail check → LLM extraction → Pydantic
+  validation → transaction. The same safety layer that protects the Orders
+  page applies here.
+- **Iteration cap**: the loop exits after 8 iterations. A model that loops
+  indefinitely (e.g. due to a confused tool call) cannot run forever.
+- **System prompt scoping**: the agent system prompt restricts the model to
+  business data retrieval. It cannot call arbitrary code, access the filesystem,
+  or invoke any endpoint outside the tool list.
 
 ---
 

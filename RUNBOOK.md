@@ -8,7 +8,7 @@ troubleshooting SoukPilot AI.
 ## Prerequisites
 
 - Docker Desktop (with Compose v2)
-- OpenAI API key with GPT-4o-mini, Whisper-1, and text-embedding-3-small access
+- OpenAI API key with access to: GPT-4o-mini (chat + tool-calling), Whisper-1 (STT), TTS-1 (voice), text-embedding-3-small (embeddings)
 
 ---
 
@@ -66,18 +66,31 @@ docker compose down -v       # stop containers AND delete all data (full reset)
 
 ## Seeding Demo Data
 
-The seed script generates 60 days of realistic sales history for 10 products
-and creates the default business, products, and suppliers.
+The comprehensive seed script creates everything needed for a full demo run in
+one command.
 
 ```bash
-docker compose exec backend python sample_data/seed_sales.py
+# Recommended: full demo seed
+docker compose exec backend python sample_data/seed_demo.py
 ```
 
+This seeds:
+- 7 products (5 grocery + 2 apparel) with realistic stock levels
+- 419 sales rows over 60 days with weekly seasonality
+- 2 invoices from the same supplier (second invoice has deliberate 10–14% price
+  increases to trigger price-change alerts)
+- 3 orders (WhatsApp + Instagram + manual) with line items
+- AI-generated weekly report
+- Forecasting model retrain
+- RAG index rebuild
+
 After seeding:
-- Navigate to **Inventory** — shows 10 products with realistic stock levels
-- Navigate to **Reports** → click **Generate Report Now** — the weekly report
-  will have real numbers
-- Navigate to **Dashboard** — stat cards populate
+- **Dashboard** — stat cards, reorder alerts, and AI anomaly alerts (if any)
+- **Inventory** — 7 products with stock levels and reorder badges
+- **Reports** — latest weekly report ready; click "Export PDF" to download
+- **Business Q&A** — index is built; ask "Which supplier raised prices?"
+- **AI Agent** — ask "What should I reorder?" to see the tool-calling loop
+- **Voice Copilot** — speak any of the above questions
 
 ---
 
@@ -136,7 +149,7 @@ docker compose exec backend python -m pytest tests/ -v
 cd backend && python -m pytest tests/ -v
 ```
 
-Expected: **51 tests passing**. No OpenAI key or database connection needed.
+Expected: **71 tests passing**. No OpenAI key or database connection needed.
 
 ---
 
@@ -194,6 +207,12 @@ docker compose restart backend worker
 | Frontend shows "Failed to load dashboard data" | Backend not reachable — check `docker compose ps` and `curl http://localhost:8080/health` |
 | Weekly report not running on schedule | Check `docker compose logs beat`; manually trigger `POST /api/reports/generate` |
 | Migrations not applied | Run `docker compose exec backend alembic upgrade head` |
+| Voice mic button does nothing | Browser requires HTTPS or `localhost` for microphone access — ensure you're on `http://localhost:5173` |
+| Voice transcription returns empty transcript | Recording was too short or silent — speak clearly for at least 1 second |
+| TTS audio does not play | Check browser autoplay policy; some browsers block audio without a prior user gesture — the mic press counts as one |
+| "TTS failed" error in voice response | `OPENAI_API_KEY` lacks TTS-1 access, or text exceeded API limits — browser SpeechSynthesis fallback will engage automatically |
+| AI anomaly alerts not appearing on Dashboard | No anomalies detected (normal) OR insufficient sales history (< 7 days per product) — run `seed_demo.py` to generate history |
+| Agent chat returns "Something went wrong" | Max 8 tool iterations reached without a final answer — rephrase the question more specifically |
 
 ---
 

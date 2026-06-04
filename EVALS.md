@@ -17,10 +17,11 @@ cd backend && python -m pytest tests/ -v
 | `test_order_extraction.py` | 7 | NER extraction from diverse WhatsApp message styles |
 | `test_pricing.py` | 8 | Margin calculations including zero/negative edge cases |
 | `test_forecasting.py` | 5 | Feature engineering, model selection, inference output |
-| `test_rag.py` | 6 | Chunking, context building, groundedness flag |
+| `test_rag.py` | 17 | Chunking, context building, groundedness flag; BM25 scoring, RRF reranking, `retrieve_reranked` interface, parent-child metadata |
 | `test_guardrails.py` | 13 | PII redaction (3), injection detection (7), `is_safe_input` (3) |
 | `test_reports.py` | 7 | Aggregation math: pct_change, rev_profit, margin_pct |
-| **Total** | **51** | **All passing, no external services required** |
+| `test_anomaly.py` | 9 | Spike/drop detection, lookback filtering, field validation, sort order, z-score floor |
+| **Total** | **71** | **All passing, no external services required** |
 
 ---
 

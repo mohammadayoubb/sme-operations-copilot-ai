@@ -3,64 +3,70 @@
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    React Frontend (Vite)                  │
-│  Dashboard · Invoices · Orders · Inventory · Pricing     │
-│  Business Q&A · Reports · Voice Assistant                 │
-└────────────────────────┬────────────────────────────────┘
-                         │  HTTP / REST
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│                  FastAPI Backend (:8080)                  │
-│                                                           │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐  │
-│  │ invoices │ │  orders  │ │ products │ │  pricing  │  │
-│  │    API   │ │    API   │ │    API   │ │    API    │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └─────┬─────┘  │
-│  ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐        │        │
-│  │ forecast │ │    qa    │ │  reports │        │        │
-│  │    API   │ │    API   │ │    API   │        │        │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘        │        │
-│       └────────────┴────────────┘───────────────┘        │
-│                         │                                 │
-│  ┌──────────────────────▼──────────────────────────────┐ │
-│  │              Services Layer                          │ │
-│  │  invoice_service · order_service · pricing_service  │ │
-│  │  forecasting_service · rag_service · report_service │ │
-│  └──────────────────────┬──────────────────────────────┘ │
-│                         │                                 │
-│  ┌──────────────────────▼──────────────────────────────┐ │
-│  │              AI Module Layer (app/ai/)               │ │
-│  │  llm.py · ocr.py · extraction.py · embeddings.py   │ │
-│  │  rag.py · forecasting.py · vector_store.py          │ │
-│  └──────────────────────┬──────────────────────────────┘ │
-│                         │                                 │
-│  ┌──────────────────────▼──────────────────────────────┐ │
-│  │            Repository Layer (app/repositories/)      │ │
-│  │  invoice_repo · order_repo · product_repo           │ │
-│  │  sales_repo · report_repo                           │ │
-│  └──────────────────────┬──────────────────────────────┘ │
-└─────────────────────────┼───────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                       React Frontend (Vite)                       │
+│  Dashboard · Invoices · Orders · Inventory · Pricing             │
+│  Business Q&A · Reports · Voice Copilot · AI Agent Chat          │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │  HTTP / REST · SSE streaming
+                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                     FastAPI Backend (:8080)                        │
+│                                                                    │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐           │
+│  │ invoices │ │  orders  │ │ products │ │  pricing  │           │
+│  │    API   │ │    API   │ │    API   │ │    API    │           │
+│  └──────────┘ └──────────┘ └──────────┘ └───────────┘           │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐           │
+│  │ forecast │ │  qa/ask  │ │  reports │ │   voice   │           │
+│  │    API   │ │ (stream) │ │    API   │ │ transcribe│           │
+│  └──────────┘ └──────────┘ └──────────┘ │ /speak    │           │
+│  ┌──────────┐ ┌───────────────────────┐  └───────────┘           │
+│  │ anomaly  │ │   agent/chat/stream   │                           │
+│  │   API    │ │  (tool-calling loop)  │                           │
+│  └──────────┘ └───────────────────────┘                           │
+│                           │                                        │
+│  ┌────────────────────────▼─────────────────────────────────────┐ │
+│  │                    Services Layer                             │ │
+│  │  invoice_service · order_service · pricing_service           │ │
+│  │  forecasting_service · rag_service · report_service          │ │
+│  │  agent_service · anomaly_service · guardrails_service        │ │
+│  └────────────────────────┬─────────────────────────────────────┘ │
+│                           │                                        │
+│  ┌────────────────────────▼─────────────────────────────────────┐ │
+│  │                 AI Module Layer (app/ai/)                     │ │
+│  │  llm.py (complete_json · complete_text · stream_text)        │ │
+│  │  ocr.py · extraction.py · embeddings.py                      │ │
+│  │  rag.py (BM25 + vector + RRF) · forecasting.py               │ │
+│  │  vector_store.py · anomaly.py · prompts.py                   │ │
+│  └────────────────────────┬─────────────────────────────────────┘ │
+│                           │                                        │
+│  ┌────────────────────────▼─────────────────────────────────────┐ │
+│  │              Repository Layer (app/repositories/)             │ │
+│  │  invoice_repo · order_repo · product_repo                    │ │
+│  │  sales_repo · report_repo                                    │ │
+│  └────────────────────────┬─────────────────────────────────────┘ │
+└──────────────────────────┬─────────────────────────────────────────┘
+                           │
+         ┌─────────────────┼───────────────────────┐
+         ▼                 ▼                        ▼
+  ┌────────────┐   ┌──────────────┐   ┌──────────────────────┐
+  │ PostgreSQL │   │    Redis     │   │      ChromaDB        │
+  │ (main DB)  │   │  (task queue)│   │  (vector embeddings) │
+  └────────────┘   └──────┬───────┘   └──────────────────────┘
                           │
-         ┌────────────────┼───────────────────────┐
-         ▼                ▼                        ▼
-  ┌────────────┐  ┌──────────────┐  ┌──────────────────────┐
-  │ PostgreSQL │  │    Redis     │  │      ChromaDB        │
-  │ (main DB)  │  │  (task queue)│  │  (vector embeddings) │
-  └────────────┘  └──────┬───────┘  └──────────────────────┘
-                         │
-                  ┌──────▼──────────────────┐
-                  │     Celery Worker        │
-                  │  process_invoice task    │
-                  │  generate_weekly_report  │
-                  │  retrain_forecast_model  │
-                  │  index_documents task    │
-                  └─────────────────────────┘
-                  ┌──────────────────────────┐
-                  │     Celery Beat          │
-                  │  Weekly report: Mon 08:00│
-                  │  Forecast retrain: weekly│
-                  └──────────────────────────┘
+                   ┌──────▼──────────────────┐
+                   │     Celery Worker        │
+                   │  process_invoice task    │
+                   │  generate_weekly_report  │
+                   │  retrain_forecast_model  │
+                   │  index_documents task    │
+                   └─────────────────────────┘
+                   ┌──────────────────────────┐
+                   │     Celery Beat          │
+                   │  Weekly report: Mon 08:00│
+                   │  Forecast retrain: weekly│
+                   └──────────────────────────┘
 ```
 
 ---
@@ -93,9 +99,11 @@ exactly one layer, leaving all others untouched.
 | `order_service` | Guardrail check, LLM extraction, fuzzy product matching, inventory reservation, low-stock alerts |
 | `pricing_service` | Python margin calculation, LLM explanation |
 | `forecasting_service` | Feature engineering, model load/train, per-product inference, reorder recommendation list |
-| `rag_service` | Document summarisation, chunking, embedding, vector upsert, RAG answer generation |
-| `report_service` | Python aggregation (sales, profit, margins), LLM narrative, report persistence |
-| `guardrails_service` | PII redaction, prompt injection detection (called by order + QA + voice services) |
+| `rag_service` | Document summarisation, parent-child chunking, embedding, BM25+vector hybrid retrieval (RRF), grounded answer generation (streaming) |
+| `report_service` | Python aggregation (sales, profit, margins), LLM narrative, report persistence, HTML/PDF export |
+| `agent_service` | GPT-4o tool-calling loop (up to 8 iterations), 7 read/write tools, streaming SSE output |
+| `anomaly_service` | Rolling z-score anomaly detection over daily sales, batch LLM explanation of flagged anomalies |
+| `guardrails_service` | PII redaction, prompt injection detection (called by order, QA, voice, and agent services) |
 
 ---
 
@@ -169,24 +177,81 @@ Full DDL is in `alembic/versions/`.
 
 ---
 
-## AI Data Flow — RAG Q&A
+## AI Data Flow — Hybrid RAG Q&A
 
 ```
 1. POST /api/qa/index  (run once to build the index)
       │  for each invoice / order / product:
-      │    build plain-text summary
-      │    chunk_text (300-500 tokens, 50 token overlap)
+      │    build plain-text parent document
+      │    chunk_text into 400-char child chunks (stored in ChromaDB)
+      │    store full parent document in Postgres (documents table)
       │    embed_texts (text-embedding-3-small)
-      │    upsert into ChromaDB
+      │    upsert into ChromaDB with parent_id metadata
       └─► { documents_indexed, chunks_indexed }
 
-2. POST /api/qa/ask { question }
+2. POST /api/qa/ask/stream { question }   (SSE streaming)
       │  guardrails.is_safe_input(question)
       │  embed question
-      │  vector_store.search(question_vector, top_k=5)
-      │  build context string from retrieved chunks
-      │  RAG_QA_PROMPT → complete_text()
-      └─► { answer, grounded, sources: [{source_type, source_id, content, score}] }
+      │  vector_store.search(question_vector, top_k=15)  ← 3× over-retrieve
+      │  bm25_score(candidates, question)                ← keyword scoring
+      │  reciprocal_rank_fusion(vector_ranks, bm25_ranks) → top 5
+      │  fetch full parent documents from Postgres
+      │  RAG_QA_PROMPT → stream_text() → SSE token stream
+      └─► SSE: text tokens... then { answer, grounded, sources }
+          UI badge: HYBRID · "15 candidates · BM25 reranked · 5 sources"
+```
+
+## AI Data Flow — Agentic Assistant
+
+```
+POST /api/agent/chat/stream { message, history }   (SSE streaming)
+      │  loop (max 8 iterations):
+      │    GPT-4o with tools → response
+      │    if tool_call:
+      │      SSE: { type: "tool_start", tool, args }
+      │      dispatch tool (check_stock | get_reorder_alerts | get_sales_summary |
+      │                     get_latest_report | list_recent_orders |
+      │                     get_price_history | create_order)
+      │      SSE: { type: "tool_result", tool, result }
+      │    else:
+      │      break loop
+      │  final answer → stream_text() → SSE token stream
+      │  SSE: { type: "done" }
+      └─► Frontend renders tool badges + streaming text
+```
+
+## AI Data Flow — Sales Anomaly Detection
+
+```
+GET /api/anomaly/alerts
+      │  for each product with sales history:
+      │    build daily_sales series
+      │    compute 14-day rolling mean + std (std floor = max(10% of mean, 0.5))
+      │    z_score = (value - mean) / std
+      │    if |z_score| >= 2.0 AND sale_date within last 7 days:
+      │      flag anomaly (spike or drop, deviation %, actual vs expected)
+      │  batch all flagged anomalies into ONE LLM call → plain-English explanations
+      └─► { anomalies: [{ product, date, direction, deviation_pct, explanation }] }
+          Dashboard: "AI Anomaly Alerts" panel (hidden when clean)
+```
+
+## AI Data Flow — Voice Copilot
+
+```
+1. Browser: MediaRecorder → audio/webm blob
+2. POST /api/voice/transcribe  (multipart audio file)
+      │  OpenAI Whisper-1 (language auto-detected: AR / FR / EN)
+      └─► { transcript }
+
+3. POST /api/agent/chat/stream { message: transcript, history }
+      │  full agent tool-calling loop (same as Agentic Assistant above)
+      └─► SSE token stream → frontend renders tool badges + streaming text
+
+4. POST /api/voice/speak { text: response_text }
+      │  OpenAI TTS-1 / voice: nova
+      │  returns audio/mpeg (MP3 bytes)
+      └─► Browser Audio element plays response aloud
+          Fallback: window.speechSynthesis if TTS endpoint fails
 ```
 
 ---

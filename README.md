@@ -21,10 +21,12 @@ prompt safety guardrails, and a recruiter-ready UI.
 | 2 | **WhatsApp/Instagram order extraction** | Paste a customer message → LLM NER extraction → fuzzy product matching → order created and stock reserved |
 | 3 | **Pricing / Profit Advisor** | Enter cost + selling price → Python computes margin → LLM explains results in plain language |
 | 4 | **Inventory Forecasting (ML)** | 60 days of sales history → moving average + linear regression + random forest → best model auto-selected → reorder alerts |
-| 5 | **RAG Business Q&A** | Ask any question → OpenAI embeddings + Chroma vector search → grounded answer with source records |
-| 6 | **AI Weekly Business Report** | Celery beat runs every Monday → Python aggregates all metrics → LLM writes 4–6 sentence narrative |
-| 7 | **Voice Assistant** | Record or upload audio → Whisper STT → LLM command intent parsing → structured response |
-| 8 | **Guardrails + PII redaction** | Every user input scanned for prompt injection and PII before reaching any LLM |
+| 5 | **Hybrid RAG Business Q&A** | Ask any question → parent-child chunking + BM25 keyword scoring fused with vector search (RRF) → grounded answer with source records, streamed token by token |
+| 6 | **AI Weekly Business Report** | Celery beat runs every Monday → Python aggregates all metrics → LLM writes 4–6 sentence narrative → one-click PDF export |
+| 7 | **Voice Copilot (STT → Agent → TTS)** | Speak a question → Whisper transcribes → agent calls live business tools → answer streams back → OpenAI TTS reads the response aloud |
+| 8 | **Agentic Tool-Calling Assistant** | Type or speak any business question → GPT-4o tool loop queries live DB (stock, sales, orders, forecasts, reports) → streams answer with expandable tool-call badges |
+| 9 | **AI Sales Anomaly Detection** | Rolling z-score (14-day window, 2σ threshold) scans every product daily → unusual spikes/drops surfaced on Dashboard with plain-English LLM explanations |
+| 10 | **Guardrails + PII redaction** | Every user input scanned for prompt injection and PII before reaching any LLM |
 
 ---
 
@@ -55,7 +57,8 @@ This starts: **FastAPI backend** (`:8080`), **React frontend** (`:5173`),
 ### 3. Seed demo data
 
 ```bash
-docker compose exec backend python sample_data/seed_sales.py
+# Full demo seed (products, 60-day sales, invoices, orders, reports, RAG index, ML retrain)
+docker compose exec backend python sample_data/seed_demo.py
 ```
 
 ### 4. Open the app
@@ -100,7 +103,7 @@ soukpilot-ai/
 ```bash
 cd backend
 python -m pytest tests/ -v
-# 51 passed — no OpenAI key or live DB required
+# 71 passed — no OpenAI key or live DB required
 ```
 
 ---
@@ -120,9 +123,10 @@ See `.env.example` for the full list. Required variables:
 ## Tech Stack
 
 **Backend:** Python 3.12, FastAPI, SQLAlchemy 2, Alembic, Celery, Redis, PostgreSQL  
-**AI:** OpenAI GPT-4o-mini, Whisper-1, text-embedding-3-small, scikit-learn  
+**AI:** OpenAI GPT-4o-mini (chat + tool-calling), Whisper-1 (STT), TTS-1/Nova (TTS), text-embedding-3-small, scikit-learn  
 **Vector store:** ChromaDB  
-**Frontend:** React 18, TypeScript, Vite, React Router, Axios  
+**Retrieval:** BM25 Okapi (custom Python) + vector search fused with Reciprocal Rank Fusion (RRF)  
+**Frontend:** React 18, TypeScript, Vite, React Router, Axios, SSE streaming  
 **Infrastructure:** Docker Compose
 
 ---
