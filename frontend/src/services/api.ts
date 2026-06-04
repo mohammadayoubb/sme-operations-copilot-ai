@@ -70,4 +70,6 @@ export const voiceApi = {
     return http.post("/api/voice/transcribe", fd);
   },
   command: (transcript: string) => http.post("/api/voice/command", { transcript }),
+  speak: (text: string) =>
+    http.post("/api/voice/speak", { text }, { responseType: "arraybuffer" }),
 };
