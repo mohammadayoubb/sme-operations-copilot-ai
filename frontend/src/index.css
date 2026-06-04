@@ -94,3 +94,16 @@ input:focus, textarea:focus, select:focus {
   33%      { transform: translate(3%,2%)  scale(1.04); }
   66%      { transform: translate(-2%,3%) scale(0.97); }
 }
+@keyframes live-pulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.35; }
+}
+
+/* ── Table hover ──────────────────────────────────────────── */
+
+table tbody tr {
+  transition: background 0.12s ease;
+}
+table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.028);
+}
