@@ -131,26 +131,15 @@ See `.env.example` for the full list. Required variables:
 
 ---
 
-## Architecture Overview
+## Documentation
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system diagram and data
-flow descriptions.
-
-## AI Features Deep Dive
-
-See [AI_FEATURES.md](AI_FEATURES.md) for prompt templates, validation
-strategies, and design decisions for each AI feature.
-
-## Security
-
-See [SECURITY.md](SECURITY.md) for the guardrails design and PII redaction
-approach.
-
-## Evaluations
-
-See [EVALS.md](EVALS.md) for test cases and evaluation methodology.
-
-## Operations
-
-See [RUNBOOK.md](RUNBOOK.md) for deployment, seeding, retraining, and
-troubleshooting.
+| File | What's inside |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, layering rules, full AI data flows |
+| [docs/AI_FEATURES.md](docs/AI_FEATURES.md) | Prompt templates, validation strategy, design decisions per feature |
+| [docs/SECURITY.md](docs/SECURITY.md) | Guardrails design, PII redaction, agentic tool-call security |
+| [docs/EVALS.md](docs/EVALS.md) | Test cases, evaluation methodology, benchmark results |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deployment, seeding, retraining, troubleshooting |
+| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Step-by-step recruiter demo script |
+| [docs/NEW_FEATURES.md](docs/NEW_FEATURES.md) | Post-MVP feature changelog |
+| [docs/phases/](docs/phases/) | Build history: implementation plan + phase summaries |

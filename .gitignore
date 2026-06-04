@@ -55,5 +55,4 @@ celerybeat-schedule.db
 celerybeat.pid
 
 .env
-NEW_FEATURES.md
 print1.pdf
