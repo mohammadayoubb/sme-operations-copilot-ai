@@ -186,29 +186,40 @@ section of the weekly report.
 
 ---
 
-## Feature 5 — RAG Business Q&A
+## Feature 5 — Hybrid RAG Business Q&A
 
 **File:** `backend/app/ai/rag.py`, `backend/app/ai/embeddings.py`,
 `backend/app/ai/vector_store.py`, `backend/app/services/rag_service.py`
 
-### Indexing flow
+### Indexing flow (parent-child chunking)
 ```
 invoices + orders + products
-  → plain-text summaries (built in Python)
-  → chunk_text (300-500 tokens, 50-token overlap)
+  → plain-text parent document (stored in Postgres documents table)
+  → chunk_text into 400-char child chunks with metadata: {parent_id, chunk_index}
   → text-embedding-3-small (1536-dim vectors)
-  → ChromaDB upsert with metadata: {source_type, source_id, chunk_index}
+  → ChromaDB upsert (child chunks only, parent_id in metadata)
 ```
 
-### Q&A flow
+Child chunks are small for precise vector matching; the full parent document is
+fetched from Postgres and passed to the LLM for richer context.
+
+### Hybrid retrieval flow (BM25 + Vector + RRF)
 ```
 question → guardrails.is_safe_input()
          → embed question (text-embedding-3-small)
-         → ChromaDB.query(top_k=5)
-         → build context string from retrieved chunks
-         → RAG_QA_PROMPT → complete_text()
+         → ChromaDB.query(top_k=15)   ← 3× over-retrieve
+         → bm25_score(candidates, question tokens)
+               tf  = term_freq / doc_len
+               idf = log((N - df + 0.5) / (df + 0.5))
+               BM25 score = Σ idf × tf × (k1+1) / (tf + k1×(1-b+b×dl/avgdl))
+         → reciprocal_rank_fusion(vector_ranks, bm25_ranks, k=60) → top 5
+         → fetch full parent documents from Postgres for each top-5 chunk
+         → RAG_QA_PROMPT → stream_text() → SSE token stream
          → { answer, grounded, sources }
 ```
+
+BM25 is implemented in ~25 lines of native Python (no external library).
+Both ranked lists are fused with RRF: `score = Σ 1/(k + rank_i)`.
 
 ### RAG Prompt
 ```
@@ -226,10 +237,12 @@ Provide a clear, direct answer. Mention which records support your answer
 when relevant.
 ```
 
-### Groundedness
+### Groundedness and UI
 `grounded = True` when the answer does not contain the fallback phrase. Source
 records (with similarity scores) are returned alongside the answer so the owner
-can verify.
+can verify. The UI shows two badges: **GROUNDED** and **HYBRID**, plus a stats
+line: *"15 candidates · BM25 reranked · 5 sources"*. The answer streams in
+token by token via SSE.
 
 ---
 
@@ -271,43 +284,150 @@ The owner can also trigger it on-demand from the Reports page.
 
 ---
 
-## Feature 7 — Voice Assistant
+## Feature 7 — Voice Copilot (STT → Agent → TTS)
 
-**File:** `backend/app/api/voice.py`
+**Files:** `backend/app/api/voice.py`, `backend/app/services/agent_service.py`,
+`frontend/src/pages/VoiceAssistant.tsx`
 
-### Flow
+### Full pipeline
 ```
-audio file (WebM/MP3/WAV) → Whisper-1 transcription
-  → guardrails.is_safe_input(transcript)
-  → VOICE_COMMAND_PROMPT → complete_json()
-  → { transcript, intent, params }
-```
-
-### Command Prompt
-```
-You are a voice command interpreter for a Lebanese small business.
-The owner just spoke a command. Extract the intent and parameters as valid
-JSON only.
-
-Possible intents: record_sale, check_stock, create_order, get_summary, other
-
-Transcript: "{transcript}"
-
-Respond with only valid JSON: {"intent": "...", "params": {...}}
+1. Browser MediaRecorder → audio/webm blob
+2. POST /api/voice/transcribe
+      OpenAI Whisper-1 (language auto-detected: AR / FR / EN)
+      → { transcript }
+3. POST /api/agent/chat/stream { message: transcript, history }
+      Full tool-calling agent loop (see Feature 9)
+      → SSE stream: tool_start · tool_result · text · done
+4. POST /api/voice/speak { text: final_response }
+      OpenAI TTS-1, voice: "nova"
+      → audio/mpeg (MP3 bytes)
+      Browser Audio element plays response aloud
+      Fallback: window.speechSynthesis if TTS endpoint fails
 ```
 
-### Intents
-| Intent | Example utterance |
+### Endpoints
+| Endpoint | Purpose |
 |---|---|
-| `record_sale` | "Add sale: 3 Pepsi and 2 chips" |
-| `check_stock` | "How much Nutella do I have left?" |
-| `create_order` | "I need 24 bottles of water from the supplier" |
-| `get_summary` | "What were my best sellers today?" |
-| `other` | Anything not matching the above |
+| `POST /api/voice/transcribe` | Audio upload → Whisper transcript |
+| `POST /api/voice/command` | Transcript → intent classification (legacy, kept for reference) |
+| `POST /api/voice/speak` | Text → OpenAI TTS MP3 audio |
 
-Voice is currently read-only: the command is parsed and displayed but does not
-yet trigger a backend action (creating a sale, checking a product) — that is
-the agentic extension planned for Phase 8.
+### Language support
+`language` parameter removed from Whisper call — auto-detection handles Arabic,
+French, and English naturally, matching Lebanese SME multilingual usage.
+
+### TTS constraints
+Input text is capped at 600 characters before sending to TTS (trimmed at the
+last word boundary) to keep audio responses concise. The full text is always
+displayed in the chat UI regardless of the TTS cap.
+
+### UI states
+| State | Visual |
+|---|---|
+| `idle` | Mic button, static |
+| `recording` | Red pulsing ring animation |
+| `transcribing` | Animated dot spinner |
+| `thinking` | Animated dot spinner + tool badges streaming |
+| `speaking` | Indigo pulsing ring animation |
+
+A **Mute** toggle disables TTS playback while keeping the streamed text and
+tool-call badges fully visible. Conversation history is preserved across turns
+so follow-up voice questions work naturally.
+
+---
+
+## Feature 9 — Agentic Tool-Calling Assistant
+
+**Files:** `backend/app/services/agent_service.py`, `backend/app/api/agent.py`,
+`frontend/src/pages/AgentChat.tsx`
+
+### Design
+A GPT-4o tool-calling loop that queries live business data and synthesises
+answers. The agent decides which tools to call, executes them against the
+database, reads results, and loops until it has enough information.
+
+**Invariant:** All calculations stay in Python. The agent never computes
+numbers — it only reads pre-computed data and writes explanations.
+
+### Tool catalogue
+| Tool | DB operation | Returns |
+|---|---|---|
+| `check_stock` | SELECT products | All products with current stock vs reorder level |
+| `get_reorder_alerts` | Joins products + forecasting | Products needing reorder + days until stockout |
+| `get_sales_summary` | Aggregates sales (this week vs last) | Revenue, profit, % change |
+| `get_latest_report` | SELECT reports ORDER BY created_at DESC | Full weekly report text + data |
+| `list_recent_orders` | SELECT orders + items | Last N orders with line items |
+| `get_price_history` | SELECT invoice_items (fuzzy product match) | Unit-price history across invoices |
+| `create_order` | Calls order_service (full guardrail + extraction) | Created order JSON |
+
+`create_order` is the only write tool. It routes through the existing
+`order_service` pipeline — guardrail check, LLM extraction, Pydantic validation,
+DB transaction — so all safety guarantees apply.
+
+### Streaming (SSE)
+`POST /api/agent/chat/stream` emits Server-Sent Events:
+
+| Event type | Payload | When |
+|---|---|---|
+| `tool_start` | `{ tool, args }` | Tool call begins |
+| `tool_result` | `{ tool, result }` | Tool returns |
+| `text` | `{ text }` | Each streaming token of the final answer |
+| `done` | — | Stream complete |
+| `error` | `{ error }` | Unrecoverable failure |
+
+Tool rounds are non-streaming (need full JSON to parse tool calls). Only the
+final answer uses `stream_text()`. The frontend renders tool badges with a ⏳
+spinner while pending, then switches to the tool icon with expandable JSON.
+
+### Safety limits
+- Max 8 tool-calling iterations before the agent is forced to answer with
+  available data (prevents runaway loops)
+- System prompt scoped to read business data — model cannot call arbitrary code
+
+---
+
+## Feature 10 — AI Sales Anomaly Detection
+
+**Files:** `backend/app/ai/anomaly.py`, `backend/app/services/anomaly_service.py`,
+`backend/app/api/anomaly.py`
+
+### Algorithm (deterministic Python — no LLM for detection)
+```python
+# For each product with at least 7 days of sales history:
+baseline = daily_sales.rolling(window=14).mean()
+std      = daily_sales.rolling(window=14).std()
+std      = max(std, 0.1 * mean, 0.5)   # floor prevents near-zero division
+z_score  = (actual - baseline) / std
+
+# Flag if: |z_score| >= 2.0 AND date within last 7 days
+direction = "spike" if z_score > 0 else "drop"
+deviation_pct = (actual - baseline) / baseline * 100
+```
+
+The 2σ threshold means roughly 5% of normal days would be flagged by chance
+(balanced for actionability vs. noise).
+
+### LLM role (explanation only)
+All detected anomalies are collected and passed to the LLM in **one batch
+call**, regardless of how many anomalies were found. The LLM writes a
+one-sentence plain-English explanation for each:
+
+```
+A Lebanese small business had the following unusual sales days.
+For each anomaly, write ONE sentence explaining what likely happened.
+Anomalies: {anomalies_json}
+Return JSON: [{"product": ..., "date": ..., "explanation": ...}]
+```
+
+This follows the core rule: statistics in Python, explanations in the LLM.
+
+### UI
+A new **"AI Anomaly Alerts"** panel appears on the Dashboard when anomalies
+exist. Each card shows: ↑/↓ direction, product name, date, deviation %, actual
+vs expected units, and the AI explanation. The panel is hidden entirely when no
+anomalies are detected.
+
+**Endpoint:** `GET /api/anomaly/alerts`
 
 ---
 
