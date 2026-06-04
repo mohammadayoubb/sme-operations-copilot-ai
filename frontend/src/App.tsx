@@ -27,8 +27,18 @@ export default function App() {
       <div style={styles.shell}>
         <nav style={styles.sidebar}>
           <div style={styles.logo}>
-            <span style={styles.logoIcon}>◈</span>
-            <span style={styles.logoText}>SoukPilot AI</span>
+            <svg width="162" height="40" viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* arch */}
+              <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="#818cf8" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.45"/>
+              <line x1="1" y1="36" x2="35" y2="36" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/>
+              {/* SOUK */}
+              <text x="46" y="18" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="11" fontWeight="300" fill="#64748b" letterSpacing="2.5">SOUK</text>
+              {/* PILOT */}
+              <text x="46" y="34" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="13" fontWeight="800" fill="#e2e8f0" letterSpacing="2.5">PILOT</text>
+              {/* AI accent */}
+              <text x="126" y="34" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="9" fontWeight="700" fill="#6366f1" letterSpacing="1">AI</text>
+            </svg>
           </div>
           <ul style={styles.navList}>
             {NAV.map(({ to, label, icon }) => (
@@ -89,13 +99,10 @@ const styles: Record<string, React.CSSProperties> = {
   logo: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    padding: "0 20px 28px",
+    padding: "4px 20px 28px",
     borderBottom: "1px solid var(--border)",
     marginBottom: 16,
   },
-  logoIcon: { fontSize: 22, color: "var(--accent)" },
-  logoText: { fontWeight: 700, fontSize: 15, letterSpacing: "-0.3px" },
   navList: { listStyle: "none", flex: 1 },
   navLink: {
     display: "flex",
