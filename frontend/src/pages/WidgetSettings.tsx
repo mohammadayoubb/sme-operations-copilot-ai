@@ -34,10 +34,13 @@ function snippet(token: string) {
     if (!e.data || e.data.type !== 'soukpilot:resize') return;
     var w = e.data.w, h = e.data.h;
     var expanded = w > 100;
-    iframe.style.width  = w + 'px';
-    iframe.style.height = h + 'px';
+    /* Cap height so the panel never goes above the viewport */
+    var maxH = window.innerHeight - 48;
+    var safeH = expanded ? Math.min(h, maxH) : h;
+    iframe.style.width        = w + 'px';
+    iframe.style.height       = safeH + 'px';
     iframe.style.borderRadius = expanded ? '16px' : '50%';
-    iframe.style.boxShadow = expanded
+    iframe.style.boxShadow    = expanded
       ? '0 12px 48px rgba(0,0,0,0.4)'
       : '0 4px 20px rgba(99,102,241,0.5)';
   });

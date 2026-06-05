@@ -187,9 +187,11 @@ export default function WidgetChat() {
           onClick={() => setOpen(true)}
           title="Open SoukPilot AI"
         >
-          {/* Chat bubble icon */}
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          {/* SoukPilot arch logo */}
+          <svg width="28" height="28" viewBox="0 0 36 40" fill="none">
+            <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+            <line x1="1" y1="36" x2="35" y2="36" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
         </button>
       </div>
