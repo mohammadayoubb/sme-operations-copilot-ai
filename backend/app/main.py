@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api import health, invoices, orders, products, pricing, forecast, qa, reports, voice, agent, anomaly
+from app.api import health, invoices, orders, products, pricing, forecast, qa, reports, voice, agent, anomaly, widget
+import app.models.widget_token  # noqa: F401 — ensures table is registered with Base
 
 setup_logging()
 
@@ -32,3 +33,4 @@ app.include_router(reports.router)
 app.include_router(voice.router)
 app.include_router(agent.router)
 app.include_router(anomaly.router)
+app.include_router(widget.router)

@@ -9,6 +9,8 @@ import BusinessQA from "./pages/BusinessQA";
 import Reports from "./pages/Reports";
 import VoiceAssistant from "./pages/VoiceAssistant";
 import AgentChat from "./pages/AgentChat";
+import WidgetChat from "./pages/WidgetChat";
+import WidgetSettings from "./pages/WidgetSettings";
 
 // ── SVG icon helper ──────────────────────────────────────────────────────────
 
@@ -89,6 +91,12 @@ const IC = {
       <circle cx="9.5" cy="8" r=".7" fill="currentColor" stroke="none" />
     </NavIcon>
   ),
+  widget: (
+    <NavIcon>
+      <rect x="2" y="2" width="12" height="12" rx="2" />
+      <path d="M5 8h6M8 5v6" />
+    </NavIcon>
+  ),
 };
 
 // ── Navigation groups ────────────────────────────────────────────────────────
@@ -119,8 +127,9 @@ const NAV_GROUPS = [
   {
     label: "AI Studio",
     items: [
-      { to: "/agent", label: "AI Agent", icon: IC.agent },
-      { to: "/voice", label: "Voice",    icon: IC.voice },
+      { to: "/agent",   label: "AI Agent",      icon: IC.agent  },
+      { to: "/voice",   label: "Voice",         icon: IC.voice  },
+      { to: "/widget-settings", label: "Widget Embed", icon: IC.widget },
     ],
   },
 ];
@@ -177,83 +186,87 @@ function Topbar() {
   );
 }
 
+// ── Shell layout (sidebar + topbar + main) ──────────────────────────────────
+
+function MainLayout() {
+  return (
+    <div style={S.shell}>
+      <div style={S.blob1} aria-hidden="true" />
+      <div style={S.blob2} aria-hidden="true" />
+      <div style={S.blob3} aria-hidden="true" />
+
+      <nav style={S.sidebar}>
+        <div style={S.logo}>
+          <svg width="162" height="40" viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" fill="none"/>
+            <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="#a5b4fc" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.4"/>
+            <line x1="1" y1="36" x2="35" y2="36" stroke="#818cf8" strokeWidth="2" strokeLinecap="round"/>
+            <text x="46" y="18" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="11" fontWeight="300" fill="rgba(255,255,255,0.28)" letterSpacing="2.5">SOUK</text>
+            <text x="46" y="34" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="13" fontWeight="800" fill="rgba(255,255,255,0.92)" letterSpacing="2.5">PILOT</text>
+            <text x="126" y="34" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="9" fontWeight="700" fill="#818cf8" letterSpacing="1">AI</text>
+          </svg>
+        </div>
+
+        <ul style={S.navList}>
+          {NAV_GROUPS.map((group, gi) => (
+            <li key={gi}>
+              {group.label && <div style={S.navGroupLabel}>{group.label}</div>}
+              <ul style={{ listStyle: "none" }}>
+                {group.items.map(({ to, label, icon }) => (
+                  <li key={to}>
+                    <NavLink
+                      to={to}
+                      end={to === "/"}
+                      style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navLinkActive : {}) })}
+                    >
+                      <span style={S.navIcon}>{icon}</span>
+                      {label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+
+        <div style={S.sidebarFooter}>
+          <span style={S.footerDot} />
+          <span>System live · v0.1.0</span>
+        </div>
+      </nav>
+
+      <div style={S.contentWrapper}>
+        <Topbar />
+        <main style={S.main}>
+          <Routes>
+            <Route path="/"               element={<Dashboard />} />
+            <Route path="/invoices"       element={<InvoiceUpload />} />
+            <Route path="/orders"         element={<Orders />} />
+            <Route path="/inventory"      element={<Inventory />} />
+            <Route path="/pricing"        element={<PricingAdvisor />} />
+            <Route path="/qa"             element={<BusinessQA />} />
+            <Route path="/reports"        element={<Reports />} />
+            <Route path="/voice"          element={<VoiceAssistant />} />
+            <Route path="/agent"          element={<AgentChat />} />
+            <Route path="/widget-settings" element={<WidgetSettings />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div style={S.shell}>
-
-        {/* ── Aurora background blobs ── */}
-        <div style={S.blob1} aria-hidden="true" />
-        <div style={S.blob2} aria-hidden="true" />
-        <div style={S.blob3} aria-hidden="true" />
-
-        {/* ── Sidebar ── */}
-        <nav style={S.sidebar}>
-          <div style={S.logo}>
-            <svg width="162" height="40" viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" fill="none"/>
-              <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="#a5b4fc" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.4"/>
-              <line x1="1" y1="36" x2="35" y2="36" stroke="#818cf8" strokeWidth="2" strokeLinecap="round"/>
-              <text x="46" y="18" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="11" fontWeight="300" fill="rgba(255,255,255,0.28)" letterSpacing="2.5">SOUK</text>
-              <text x="46" y="34" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="13" fontWeight="800" fill="rgba(255,255,255,0.92)" letterSpacing="2.5">PILOT</text>
-              <text x="126" y="34" fontFamily="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fontSize="9" fontWeight="700" fill="#818cf8" letterSpacing="1">AI</text>
-            </svg>
-          </div>
-
-          <ul style={S.navList}>
-            {NAV_GROUPS.map((group, gi) => (
-              <li key={gi}>
-                {group.label && (
-                  <div style={S.navGroupLabel}>{group.label}</div>
-                )}
-                <ul style={{ listStyle: "none" }}>
-                  {group.items.map(({ to, label, icon }) => (
-                    <li key={to}>
-                      <NavLink
-                        to={to}
-                        end={to === "/"}
-                        style={({ isActive }) => ({
-                          ...S.navLink,
-                          ...(isActive ? S.navLinkActive : {}),
-                        })}
-                      >
-                        <span style={S.navIcon}>{icon}</span>
-                        {label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-
-          <div style={S.sidebarFooter}>
-            <span style={S.footerDot} />
-            <span>System live · v0.1.0</span>
-          </div>
-        </nav>
-
-        {/* ── Content wrapper (topbar + scrollable main) ── */}
-        <div style={S.contentWrapper}>
-          <Topbar />
-          <main style={S.main}>
-            <Routes>
-              <Route path="/"          element={<Dashboard />} />
-              <Route path="/invoices"  element={<InvoiceUpload />} />
-              <Route path="/orders"    element={<Orders />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/pricing"   element={<PricingAdvisor />} />
-              <Route path="/qa"        element={<BusinessQA />} />
-              <Route path="/reports"   element={<Reports />} />
-              <Route path="/voice"     element={<VoiceAssistant />} />
-              <Route path="/agent"     element={<AgentChat />} />
-            </Routes>
-          </main>
-        </div>
-
-      </div>
+      <Routes>
+        {/* Widget runs standalone — no sidebar/topbar */}
+        <Route path="/widget" element={<WidgetChat />} />
+        {/* Everything else gets the full shell */}
+        <Route path="/*" element={<MainLayout />} />
+      </Routes>
     </BrowserRouter>
   );
 }

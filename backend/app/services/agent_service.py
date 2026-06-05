@@ -17,6 +17,7 @@ Design rules:
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, timedelta
 from typing import Any
 
@@ -36,9 +37,17 @@ You are SoukPilot, an AI operations assistant for a Lebanese small business.
 You have access to the business's live data through tools.
 Always use tools to look up real data before answering questions about stock,
 sales, orders, or prices.
-Be concise and direct. Use numbers when you have them. Respond in the same
-language the owner uses (Arabic or English).
+Be concise and direct. Use numbers when you have them.
 """
+
+_ARABIC_RE = re.compile(r'[؀-ۿ]')
+
+
+def _lang_reminder(message: str) -> str:
+    """Return a system-role language reminder injected right before the user's turn."""
+    if _ARABIC_RE.search(message):
+        return "LANGUAGE RULE: The owner just wrote/spoke in Arabic. Your reply MUST be entirely in Arabic. Do not use English at all."
+    return "LANGUAGE RULE: The owner just wrote/spoke in English. Your reply MUST be entirely in English. Do not use Arabic at all."
 
 # ── Tool definitions (OpenAI function-calling schema) ──────────────────────
 
@@ -318,6 +327,7 @@ def chat(
     db: Session,
     message: str,
     history: list[dict],
+    business_id: int | None = None,
 ) -> dict:
     """Run the agentic tool-calling loop and return the final response.
 
@@ -338,14 +348,17 @@ def chat(
         logger.warning("agent_input_blocked", reason=reason)
         raise ValueError(f"Input blocked by guardrails: {reason}")
 
-    business = product_repo.get_or_create_default_business(db)
-    business_id = business.id
+    if business_id is None:
+        business = product_repo.get_or_create_default_business(db)
+        business_id = business.id
 
-    # Build message list: system + prior history + new user turn
+    # Build message list: system + prior history + language reminder + new user turn
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for h in history:
         if h.get("role") in ("user", "assistant"):
             messages.append({"role": h["role"], "content": h["content"]})
+    # Language reminder sits right before the user's turn so it overrides history context
+    messages.append({"role": "system", "content": _lang_reminder(message)})
     messages.append({"role": "user", "content": message})
 
     from app.ai.llm import _client
@@ -412,7 +425,7 @@ def chat(
 
 # ── Streaming agent loop ─────────────────────────────────────────────────────
 
-def chat_stream(db: Session, message: str, history: list[dict]):
+def chat_stream(db: Session, message: str, history: list[dict], business_id: int | None = None):
     """Streaming version of chat(). Yields SSE-formatted strings.
 
     SSE event types:
@@ -435,13 +448,16 @@ def chat_stream(db: Session, message: str, history: list[dict]):
         yield f'data: {_json.dumps({"type": "error", "error": f"Input blocked: {reason}"})}\n\n'
         return
 
-    business = product_repo.get_or_create_default_business(db)
-    business_id = business.id
+    if business_id is None:
+        business = product_repo.get_or_create_default_business(db)
+        business_id = business.id
 
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for h in history:
         if h.get("role") in ("user", "assistant"):
             messages.append({"role": h["role"], "content": h["content"]})
+    # Language reminder sits right before the user's turn so it overrides history context
+    messages.append({"role": "system", "content": _lang_reminder(message)})
     messages.append({"role": "user", "content": message})
 
     from app.ai.llm import _client, stream_text
