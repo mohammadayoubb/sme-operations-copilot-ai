@@ -47,6 +47,13 @@ input, textarea, select {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+select {
+  background: #1a1d2e;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  cursor: pointer;
+}
+
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: rgba(129, 140, 248, 0.5) !important;

@@ -230,8 +230,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   controls: { display: "flex", gap: 12, alignItems: "center" },
   select: {
-    background: "var(--surface2)",
-    border: "1px solid var(--border)",
+    background: "#1a1d2e",
+    border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: 6,
     padding: "10px 12px",
     color: "var(--text)",
@@ -262,8 +262,8 @@ const styles: Record<string, React.CSSProperties> = {
   jsonSummary: { cursor: "pointer", color: "var(--text-muted)", fontSize: 13 },
   json: { background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, padding: 14, fontSize: 12.5, overflowX: "auto", marginTop: 10 },
   statusSelect: {
-    background: "var(--surface2)",
-    border: "1px solid var(--border)",
+    background: "#1a1d2e",
+    border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: 6,
     padding: "5px 8px",
     color: "var(--text)",
