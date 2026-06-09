@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import CurrentUser, get_current_user
 from app.core.logging import get_logger
 from app.schemas.qa import IndexResponse, QARequest, QAResponse
 from app.services import rag_service
@@ -14,10 +15,13 @@ router = APIRouter(prefix="/api/qa", tags=["Q&A"])
 
 
 @router.post("/ask/stream")
-def ask_stream(payload: QARequest, db: Session = Depends(get_db)):
-    """Streaming version — yields sources immediately, then streams the LLM answer."""
+def ask_stream(
+    payload: QARequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
-        gen = rag_service.ask_stream(db, payload.question, top_k=payload.top_k)
+        gen = rag_service.ask_stream(db, payload.question, current_user.business_id, top_k=payload.top_k)
         return StreamingResponse(gen, media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
     except GuardrailError as exc:
@@ -28,10 +32,13 @@ def ask_stream(payload: QARequest, db: Session = Depends(get_db)):
 
 
 @router.post("/ask", response_model=QAResponse)
-def ask_question(payload: QARequest, db: Session = Depends(get_db)):
-    """Answer a business question grounded ONLY in the owner's indexed records."""
+def ask_question(
+    payload: QARequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
-        result = rag_service.ask(db, payload.question, top_k=payload.top_k)
+        result = rag_service.ask(db, payload.question, current_user.business_id, top_k=payload.top_k)
         return QAResponse(**result)
     except GuardrailError as exc:
         raise HTTPException(400, str(exc))
@@ -41,14 +48,12 @@ def ask_question(payload: QARequest, db: Session = Depends(get_db)):
 
 
 @router.post("/index", response_model=IndexResponse)
-def trigger_indexing(db: Session = Depends(get_db)):
-    """(Re)build the document index from current invoices, orders, and products.
-
-    Runs synchronously (the dataset is small); the same work is also available as
-    the `reindex_all_documents` Celery task for background/scheduled re-indexing.
-    """
+def trigger_indexing(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
-        result = rag_service.index_all(db)
+        result = rag_service.index_all(db, current_user.business_id)
         return IndexResponse(**result)
     except Exception as exc:  # noqa: BLE001
         db.rollback()

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import CurrentUser, get_current_user
 from app.schemas.forecast import ProductForecast, RetrainResult
 from app.services import forecasting_service
 
@@ -9,29 +10,32 @@ router = APIRouter(prefix="/api/forecast", tags=["Forecast"])
 
 
 @router.get("/reorder", response_model=list[ProductForecast])
-def get_reorder_recommendations(db: Session = Depends(get_db)):
-    """Products that should be reordered, soonest stockout first."""
-    return forecasting_service.get_reorder_recommendations(db)
+def get_reorder_recommendations(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return forecasting_service.get_reorder_recommendations(db, current_user.business_id)
 
 
 @router.get("/stockout/{product_id}", response_model=ProductForecast)
-def get_stockout_prediction(product_id: int, db: Session = Depends(get_db)):
-    forecast = forecasting_service.forecast_one(db, product_id)
+def get_stockout_prediction(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    forecast = forecasting_service.forecast_one(db, product_id, current_user.business_id)
     if forecast is None:
         raise HTTPException(404, "Product not found")
     return forecast
 
 
 @router.post("/retrain", response_model=RetrainResult)
-def trigger_retraining(db: Session = Depends(get_db)):
-    """Retrain + compare the forecasting models now and persist the best artifact.
-
-    Runs synchronously (the dataset is small) so the RMSE/MAE comparison and the
-    saved model path come straight back. The same work also runs weekly via the
-    `retrain_forecasting_model` Celery beat task.
-    """
+def trigger_retraining(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
-        result = forecasting_service.train_and_save(db)
+        result = forecasting_service.train_and_save(db, current_user.business_id)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     return RetrainResult(

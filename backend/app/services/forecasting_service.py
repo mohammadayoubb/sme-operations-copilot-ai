@@ -18,7 +18,7 @@ from app.schemas.forecast import ProductForecast
 logger = get_logger(__name__)
 
 
-def _series_by_product(db: Session, business_id: Optional[int] = None) -> dict:
+def _series_by_product(db: Session, business_id: int) -> dict:
     """Build a daily sales series for every product that has sales history."""
     sales = sales_repo.get_all_sales(db, business_id)
     grouped: dict[int, list] = {}
@@ -27,7 +27,7 @@ def _series_by_product(db: Session, business_id: Optional[int] = None) -> dict:
     return {pid: forecasting.daily_series(rows) for pid, rows in grouped.items()}
 
 
-def train_and_save(db: Session, business_id: Optional[int] = None) -> dict:
+def train_and_save(db: Session, business_id: int = 1) -> dict:
     """Train + compare models on all sales history and persist the best artifact."""
     series = _series_by_product(db, business_id)
     artifact = forecasting.train_and_select(series)
@@ -70,7 +70,7 @@ def _forecast_for_product(db: Session, product, artifact: Optional[dict]) -> Pro
     )
 
 
-def get_reorder_recommendations(db: Session, business_id: Optional[int] = None) -> list[ProductForecast]:
+def get_reorder_recommendations(db: Session, business_id: int = 1) -> list[ProductForecast]:
     """Forecast every product; return only those that should be reordered."""
     artifact = _ensure_artifact(db)
     products = product_repo.list_products(db, business_id)
@@ -81,9 +81,9 @@ def get_reorder_recommendations(db: Session, business_id: Optional[int] = None) 
     return recommended
 
 
-def forecast_one(db: Session, product_id: int) -> Optional[ProductForecast]:
+def forecast_one(db: Session, product_id: int, business_id: int = 1) -> Optional[ProductForecast]:
     product = product_repo.get_product(db, product_id)
-    if product is None:
+    if product is None or product.business_id != business_id:
         return None
     artifact = _ensure_artifact(db)
     return _forecast_for_product(db, product, artifact)

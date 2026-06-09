@@ -63,12 +63,9 @@ def _get_explanations(raw: list[dict]) -> list[str]:
     ]
 
 
-def detect_all(db: Session, business_id: Optional[int] = None) -> dict:
+def detect_all(db: Session, business_id: int) -> dict:
     """Scan all products and return recent anomalies with AI explanations."""
-    business = product_repo.get_or_create_default_business(db)
-    bid = business_id or business.id
-
-    products = product_repo.list_products(db, bid)
+    products = product_repo.list_products(db, business_id)
     raw_anomalies: list[dict] = []
 
     for product in products:

@@ -133,19 +133,16 @@ def _narrate(data: dict) -> str:
     return complete_text(WEEKLY_REPORT_PROMPT.format(data_json=json.dumps(data, indent=2)))
 
 
-def generate(db: Session, business_id: Optional[int] = None):
+def generate(db: Session, business_id: int):
     """Build the weekly numbers, have the LLM narrate them, and persist the report.
 
     Caller manages commit/rollback. Returns the created Report (flushed, with id).
     """
-    business = product_repo.get_or_create_default_business(db)
-    bid = business_id or business.id
-
-    data = build_report_data(db, bid)
+    data = build_report_data(db, business_id)
     summary = _narrate(data)
 
     report = report_repo.create_report(
-        db, bid,
+        db, business_id,
         period_start=date.fromisoformat(data["period"]["start"]),
         period_end=date.fromisoformat(data["period"]["end"]),
         summary_text=summary,

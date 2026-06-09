@@ -3,6 +3,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import CurrentUser, get_current_user
 from app.core.logging import get_logger
 from app.repositories import report_repo
 from app.schemas.report import ReportListItem, ReportOut
@@ -14,23 +15,32 @@ router = APIRouter(prefix="/api/reports", tags=["Reports"])
 
 
 @router.get("/", response_model=list[ReportListItem])
-def list_reports(db: Session = Depends(get_db)):
-    return report_repo.list_reports(db)
+def list_reports(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return report_repo.list_reports(db, current_user.business_id)
 
 
 @router.get("/latest", response_model=ReportOut)
-def get_latest_report(db: Session = Depends(get_db)):
-    report = report_repo.get_latest(db)
+def get_latest_report(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    report = report_repo.get_latest(db, current_user.business_id)
     if report is None:
         raise HTTPException(404, "No reports generated yet")
     return report
 
 
 @router.get("/{report_id}/pdf")
-def export_report_pdf(report_id: int, db: Session = Depends(get_db)):
-    """Render a saved report as a downloadable PDF."""
+def export_report_pdf(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     report = report_repo.get(db, report_id)
-    if report is None:
+    if report is None or report.business_id != current_user.business_id:
         raise HTTPException(404, "Report not found")
     if not report.data_json:
         raise HTTPException(422, "Report has no data yet — generate it first")
@@ -42,7 +52,6 @@ def export_report_pdf(report_id: int, db: Session = Depends(get_db)):
         raise HTTPException(502, f"PDF generation failed: {exc}")
 
     period = f"{report.period_start}-{report.period_end}" if report.period_start else str(report_id)
-    logger.info("report_exported_html", report_id=report_id, bytes=len(pdf_bytes))
     return Response(
         content=pdf_bytes,
         media_type="text/html; charset=utf-8",
@@ -51,10 +60,12 @@ def export_report_pdf(report_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/generate", response_model=ReportOut)
-def generate_report(db: Session = Depends(get_db)):
-    """Aggregate this week's numbers in Python, narrate with the LLM, and save."""
+def generate_report(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
-        report = report_service.generate(db)
+        report = report_service.generate(db, current_user.business_id)
         db.commit()
         db.refresh(report)
         return report

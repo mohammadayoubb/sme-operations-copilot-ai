@@ -4,13 +4,14 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import CurrentUser, get_current_user
 from app.services import agent_service
 
 router = APIRouter(prefix="/api/agent", tags=["Agent"])
 
 
 class HistoryMessage(BaseModel):
-    role: str   # "user" or "assistant"
+    role: str
     content: str
 
 
@@ -31,13 +32,17 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat/stream")
-def agent_chat_stream(body: ChatRequest, db: Session = Depends(get_db)):
-    """Streaming version — yields SSE events as the agent thinks and calls tools."""
+def agent_chat_stream(
+    body: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
         gen = agent_service.chat_stream(
             db,
             message=body.message,
             history=[h.model_dump() for h in body.history],
+            business_id=current_user.business_id,
         )
         return StreamingResponse(gen, media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
@@ -46,12 +51,17 @@ def agent_chat_stream(body: ChatRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/chat", response_model=ChatResponse)
-def agent_chat(body: ChatRequest, db: Session = Depends(get_db)):
+def agent_chat(
+    body: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     try:
         result = agent_service.chat(
             db,
             message=body.message,
             history=[h.model_dump() for h in body.history],
+            business_id=current_user.business_id,
         )
         return ChatResponse(
             response=result["response"],

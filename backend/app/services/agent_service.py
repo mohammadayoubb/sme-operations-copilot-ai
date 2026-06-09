@@ -349,8 +349,7 @@ def chat(
         raise ValueError(f"Input blocked by guardrails: {reason}")
 
     if business_id is None:
-        business = product_repo.get_or_create_default_business(db)
-        business_id = business.id
+        raise ValueError("business_id is required")
 
     # Build message list: system + prior history + language reminder + new user turn
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -449,8 +448,8 @@ def chat_stream(db: Session, message: str, history: list[dict], business_id: int
         return
 
     if business_id is None:
-        business = product_repo.get_or_create_default_business(db)
-        business_id = business.id
+        yield f'data: {_json.dumps({"type": "error", "error": "business_id is required"})}\n\n'
+        return
 
     messages: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for h in history:

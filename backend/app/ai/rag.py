@@ -40,11 +40,11 @@ def build_context(hits: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def retrieve(question: str, top_k: int = 5) -> list[dict]:
+def retrieve(question: str, top_k: int = 5, business_id: int = 1) -> list[dict]:
     from app.ai import embeddings, vector_store
 
     qvec = embeddings.embed_text(question)
-    return vector_store.query(qvec, n_results=top_k)
+    return vector_store.query(qvec, n_results=top_k, business_id=business_id)
 
 
 # ── BM25 + Reciprocal Rank Fusion ────────────────────────────────────
@@ -117,12 +117,12 @@ def rrf_rerank(hits: list[dict], question: str, k: int = 60) -> list[dict]:
     return [h for _, h in scored]
 
 
-def retrieve_reranked(question: str, top_k: int = 5) -> tuple[list[dict], dict]:
+def retrieve_reranked(question: str, top_k: int = 5, business_id: int = 1) -> tuple[list[dict], dict]:
     """Hybrid retrieval: vector search for more candidates, then BM25 rerank.
 
     Returns (reranked_hits[:top_k], retrieval_stats).
     """
-    candidates = retrieve(question, top_k=top_k * 3)
+    candidates = retrieve(question, top_k=top_k * 3, business_id=business_id)
     if not candidates:
         return [], {"candidates": 0, "reranked": False, "returned": 0}
 
