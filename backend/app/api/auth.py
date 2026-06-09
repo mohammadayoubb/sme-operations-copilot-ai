@@ -53,12 +53,29 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    """Authenticate and return a JWT carrying the user's business_id."""
+    """Authenticate and return a JWT carrying the user's business_id.
+
+    Falls back to the hardcoded admin credentials from config so existing
+    single-tenant data (business_id=1) remains accessible during the demo.
+    """
+    from app.core.config import settings
+    from app.core.security import verify_admin_password
+    from app.repositories.product_repo import get_or_create_default_business
+
+    # 1. Try DB user first
     user = db.query(User).filter(User.username == payload.username).first()
-    if user is None or not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-        )
-    token = create_access_token(sub=user.username, business_id=user.business_id)
-    return TokenResponse(access_token=token, username=user.username, business_id=user.business_id)
+    if user is not None and verify_password(payload.password, user.hashed_password):
+        token = create_access_token(sub=user.username, business_id=user.business_id)
+        return TokenResponse(access_token=token, username=user.username, business_id=user.business_id)
+
+    # 2. Fallback: hardcoded admin from config (preserves existing demo data)
+    if payload.username == settings.admin_username and verify_admin_password(payload.password):
+        business = get_or_create_default_business(db)
+        db.commit()
+        token = create_access_token(sub=settings.admin_username, business_id=business.id)
+        return TokenResponse(access_token=token, username=settings.admin_username, business_id=business.id)
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid credentials",
+    )

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from typing import Optional
 
 from jose import JWTError, jwt
@@ -20,6 +21,16 @@ def hash_password(plain: str) -> str:
 
 def verify_password(plain: str, hashed: str) -> bool:
     return _ctx.verify(plain, hashed)
+
+
+@lru_cache(maxsize=1)
+def _admin_hash() -> str:
+    from app.core.config import settings
+    return _ctx.hash(settings.admin_password)
+
+
+def verify_admin_password(plain: str) -> bool:
+    return _ctx.verify(plain, _admin_hash())
 
 
 def create_access_token(sub: str, business_id: int) -> str:
