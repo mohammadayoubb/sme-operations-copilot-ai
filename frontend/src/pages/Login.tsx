@@ -56,11 +56,11 @@ export default function Login() {
             <input
               style={S.input}
               type="text"
-              autoComplete="username"
+              autoComplete="off"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="admin"
+              placeholder="Username"
             />
           </div>
 
@@ -69,7 +69,7 @@ export default function Login() {
             <input
               style={S.input}
               type="password"
-              autoComplete="current-password"
+              autoComplete="off"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
