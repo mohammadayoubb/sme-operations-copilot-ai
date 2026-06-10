@@ -30,7 +30,7 @@ http.interceptors.response.use(
 
 export const authApi = {
   login: (username: string, password: string) =>
-    http.post<{ access_token: string; token_type: string; username: string; business_id: number }>(
+    http.post<{ access_token: string; token_type: string; username: string; business_id: number | null; role: string | null }>(
       "/api/auth/login",
       { username, password }
     ),
