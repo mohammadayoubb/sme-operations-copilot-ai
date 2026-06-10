@@ -111,6 +111,38 @@ export const driftApi = {
   run: () => http.post("/api/drift/run"),
 };
 
+// ── Superadmin API (uses a separate token stored under soukpilot_admin_token) ─
+
+const adminHttp = axios.create({ baseURL: BASE });
+adminHttp.interceptors.request.use((config) => {
+  const token = localStorage.getItem("soukpilot_admin_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export interface TenantInfo {
+  id: number;
+  name: string;
+  created_at: string | null;
+  owner_username: string | null;
+  user_count: number;
+  product_count: number;
+  order_count: number;
+}
+
+export const adminApi = {
+  login: (username: string, password: string) =>
+    http.post<{ access_token: string; username: string; business_id: number | null; role: string | null }>(
+      "/api/auth/login",
+      { username, password }
+    ),
+  tenants: () => adminHttp.get<TenantInfo[]>("/api/admin/tenants"),
+  createTenant: (data: { business_name: string; username: string; password: string }) =>
+    adminHttp.post<{ id: number; name: string; owner_username: string }>("/api/admin/tenants", data),
+  deleteTenant: (businessId: number) =>
+    adminHttp.delete(`/api/admin/tenants/${businessId}`),
+};
+
 export const voiceApi = {
   transcribe: (file: File) => {
     const fd = new FormData();

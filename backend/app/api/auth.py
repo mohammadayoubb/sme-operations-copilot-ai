@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -25,7 +27,8 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     username: str
-    business_id: int
+    business_id: Optional[int] = None
+    role: Optional[str] = None
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
@@ -47,8 +50,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
 
-    token = create_access_token(sub=user.username, business_id=business.id)
-    return TokenResponse(access_token=token, username=user.username, business_id=business.id)
+    token = create_access_token(sub=user.username, business_id=business.id, role="owner")
+    return TokenResponse(access_token=token, username=user.username, business_id=business.id, role="owner")
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -65,15 +68,15 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     # 1. Try DB user first
     user = db.query(User).filter(User.username == payload.username).first()
     if user is not None and verify_password(payload.password, user.hashed_password):
-        token = create_access_token(sub=user.username, business_id=user.business_id)
-        return TokenResponse(access_token=token, username=user.username, business_id=user.business_id)
+        token = create_access_token(sub=user.username, business_id=user.business_id, role=user.role or "owner")
+        return TokenResponse(access_token=token, username=user.username, business_id=user.business_id, role=user.role)
 
     # 2. Fallback: hardcoded admin from config (preserves existing demo data)
     if payload.username == settings.admin_username and verify_admin_password(payload.password):
         business = get_or_create_default_business(db)
         db.commit()
-        token = create_access_token(sub=settings.admin_username, business_id=business.id)
-        return TokenResponse(access_token=token, username=settings.admin_username, business_id=business.id)
+        token = create_access_token(sub=settings.admin_username, business_id=business.id, role="owner")
+        return TokenResponse(access_token=token, username=settings.admin_username, business_id=business.id, role="owner")
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
