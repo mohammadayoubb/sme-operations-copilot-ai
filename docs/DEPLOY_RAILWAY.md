@@ -61,8 +61,7 @@ Make sure the deploy files are pushed (`Dockerfile.railway`, `deploy/start.sh`,
    ```
 
    Optional (WhatsApp webhook): `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
-   `TWILIO_WHATSAPP_FROM`. Point the Twilio sandbox webhook to
-   `https://<app-domain>/api/webhooks/whatsapp`.
+   `TWILIO_WHATSAPP_FROM`. See **WhatsApp orders in the demo** below.
 
 4. Deploy. Watch the logs: you should see `Running database migrations...`,
    the Celery banner, then uvicorn on port 8080.
@@ -130,6 +129,46 @@ UPDATE users SET hashed_password = '<paste hash>' WHERE username = 'superadmin';
 - [ ] Voice Copilot works (mic requires HTTPS — Railway domains are HTTPS ✓)
 - [ ] Upload a sample invoice → status flips `pending → processed`
       (proves the Celery worker is alive)
+
+## WhatsApp orders in the demo (Twilio sandbox)
+
+The webhook (`POST /api/webhooks/whatsapp`) extracts an order from the
+message via LLM, creates it, and replies with a confirmation over WhatsApp.
+
+1. Create a free [Twilio](https://www.twilio.com) account (trial is enough).
+2. Console → **Messaging → Try it out → Send a WhatsApp message**. From your
+   phone, send the shown join code (e.g. `join <two-words>`) to the sandbox
+   number `+1 415 523 8886`.
+3. In **Sandbox settings**, set *"When a message comes in"* to
+   `https://<app-domain>/api/webhooks/whatsapp`, method **POST**. Save.
+4. On the Railway **app** service, set:
+
+   ```
+   TWILIO_ACCOUNT_SID=AC...
+   TWILIO_AUTH_TOKEN=...          # Console → Account Info
+   TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+   ```
+
+   (If `TWILIO_AUTH_TOKEN` is left blank, signature validation is skipped —
+   the webhook still works, but anyone who finds the URL can post fake
+   orders. Fine for a rehearsal, set it for the real demo.)
+5. WhatsApp the sandbox number something like
+   *"Hi, I want 2 black hoodies size L and 1 white t-shirt, delivery to
+   Hamra, cash on delivery"* → you get a confirmation reply, and the order
+   appears on the **Orders** page.
+
+**Demo caveats:**
+
+- The webhook can't know which tenant a message belongs to, so it hardcodes
+  **business_id=1** — the first business in the DB (the one `seed_demo.py`
+  creates). Demo WhatsApp orders while logged into *that* business, not a
+  newly registered one.
+- Twilio sandbox only delivers to phones that have joined (step 2), and the
+  join expires after 72 hours — **re-send the join code the day of the
+  presentation**.
+- Signature validation requires the uvicorn proxy-header flags already set
+  in `deploy/start.sh`; without them Twilio's signature (computed over the
+  `https://` URL) never matches and every webhook returns 403.
 
 ## Troubleshooting
 

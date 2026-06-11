@@ -24,4 +24,8 @@ celery -A app.workers.celery_app beat \
   --schedule=/tmp/celerybeat-schedule &
 
 echo "Starting API on port ${PORT:-8080}..."
-exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8080}"
+# --proxy-headers/--forwarded-allow-ips: behind Railway's TLS-terminating
+# proxy, request.url must reconstruct the https scheme from X-Forwarded-Proto
+# or Twilio webhook signature validation fails (Twilio signs the https URL).
+exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8080}" \
+  --proxy-headers --forwarded-allow-ips "*"
