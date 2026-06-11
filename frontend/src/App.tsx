@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNaviga
 import { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import SuperAdmin from "./pages/SuperAdmin";
 import Dashboard from "./pages/Dashboard";
 import InvoiceUpload from "./pages/InvoiceUpload";
 import Orders from "./pages/Orders";
@@ -370,9 +371,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public standalone routes */}
-        <Route path="/login"    element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/widget"   element={<WidgetChat />} />
+        <Route path="/login"       element={<Login />} />
+        <Route path="/register"    element={<Register />} />
+        <Route path="/widget"      element={<WidgetChat />} />
+        <Route path="/superadmin"  element={<SuperAdmin />} />
         {/* Everything else requires auth and gets the full shell */}
         <Route path="/*" element={<RequireAuth><MainLayout /></RequireAuth>} />
       </Routes>

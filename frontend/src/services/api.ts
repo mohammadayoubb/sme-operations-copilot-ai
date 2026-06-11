@@ -30,7 +30,7 @@ http.interceptors.response.use(
 
 export const authApi = {
   login: (username: string, password: string) =>
-    http.post<{ access_token: string; token_type: string; username: string; business_id: number }>(
+    http.post<{ access_token: string; token_type: string; username: string; business_id: number | null; role: string | null }>(
       "/api/auth/login",
       { username, password }
     ),
@@ -109,6 +109,50 @@ export const anomalyApi = {
 export const driftApi = {
   latest: () => http.get("/api/drift/latest"),
   run: () => http.post("/api/drift/run"),
+};
+
+// ── Superadmin API (uses a separate token stored under soukpilot_admin_token) ─
+
+const adminHttp = axios.create({ baseURL: BASE });
+adminHttp.interceptors.request.use((config) => {
+  const token = localStorage.getItem("soukpilot_admin_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export interface TenantStats {
+  orders: { total: number; by_status: Record<string, number>; last_at: string | null };
+  invoices: { total: number; by_status: Record<string, number>; last_at: string | null };
+  products: { total: number; low_stock: number };
+  revenue_total: number;
+  ai: { insights_generated: number; documents_indexed: number };
+  users: { total: number; by_role: Record<string, number> };
+  last_activity_at: string | null;
+}
+
+export interface TenantInfo {
+  id: number;
+  name: string;
+  created_at: string | null;
+  owner_username: string | null;
+  user_count: number;
+  product_count: number;
+  order_count: number;
+}
+
+export const adminApi = {
+  login: (username: string, password: string) =>
+    http.post<{ access_token: string; username: string; business_id: number | null; role: string | null }>(
+      "/api/auth/login",
+      { username, password }
+    ),
+  tenants: () => adminHttp.get<TenantInfo[]>("/api/admin/tenants"),
+  createTenant: (data: { business_name: string; username: string; password: string }) =>
+    adminHttp.post<{ id: number; name: string; owner_username: string }>("/api/admin/tenants", data),
+  deleteTenant: (businessId: number) =>
+    adminHttp.delete(`/api/admin/tenants/${businessId}`),
+  tenantStats: (businessId: number) =>
+    adminHttp.get<TenantStats>(`/api/admin/tenants/${businessId}/stats`),
 };
 
 export const voiceApi = {

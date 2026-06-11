@@ -15,9 +15,14 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await authApi.login(username, password);
-      localStorage.setItem("soukpilot_token", res.data.access_token);
-      localStorage.setItem("soukpilot_username", res.data.username);
-      navigate("/", { replace: true });
+      if (res.data.role === "superadmin") {
+        localStorage.setItem("soukpilot_admin_token", res.data.access_token);
+        navigate("/superadmin", { replace: true });
+      } else {
+        localStorage.setItem("soukpilot_token", res.data.access_token);
+        localStorage.setItem("soukpilot_username", res.data.username);
+        navigate("/", { replace: true });
+      }
     } catch {
       setError("Invalid username or password.");
     } finally {
@@ -51,11 +56,11 @@ export default function Login() {
             <input
               style={S.input}
               type="text"
-              autoComplete="username"
+              autoComplete="off"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="admin"
+              placeholder="Username"
             />
           </div>
 
@@ -64,7 +69,7 @@ export default function Login() {
             <input
               style={S.input}
               type="password"
-              autoComplete="current-password"
+              autoComplete="off"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
