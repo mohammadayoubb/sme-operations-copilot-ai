@@ -94,6 +94,15 @@ export default function WidgetChat() {
     window.parent.postMessage({ type: "soukpilot:resize", ...size }, "*");
   }, [open]);
 
+  // Allow the snippet's drag overlay to toggle open state via postMessage
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.data?.type === "soukpilot:toggle") setOpen(o => !o);
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);

@@ -14,38 +14,100 @@ interface WidgetToken {
 function snippet(token: string) {
   return `<script>
 (function () {
-  /* The widget manages its own open/closed state internally.
-     This snippet just creates the iframe and resizes it when the
-     widget sends a soukpilot:resize message. */
+  /* Wrapper holds position; iframe fills it; handle sits on top for drag */
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = [
+    'position:fixed', 'bottom:24px', 'right:24px',
+    'width:64px', 'height:64px', 'border-radius:50%',
+    'z-index:9999',
+    'transition:width 0.22s ease,height 0.22s ease,border-radius 0.22s ease',
+    'box-shadow:0 4px 20px rgba(99,102,241,0.5)',
+  ].join(';');
+
   var iframe = document.createElement('iframe');
   iframe.src = '${FRONTEND_ORIGIN}/widget?token=${token}';
   iframe.allow = 'microphone';
   iframe.setAttribute('scrolling', 'no');
-  /* Start at button size — widget will request full size when opened */
-  iframe.style.cssText = [
-    'position:fixed', 'bottom:24px', 'right:24px',
-    'width:64px', 'height:64px',
-    'border:none', 'border-radius:50%',
-    'z-index:9999', 'background:transparent',
-    'transition:width 0.22s ease,height 0.22s ease,border-radius 0.22s ease',
-  ].join(';');
+  iframe.style.cssText = 'width:100%;height:100%;border:none;border-radius:inherit;display:block;background:transparent;';
 
+  /* Transparent overlay — captures mouse events so the iframe never swallows them */
+  var handle = document.createElement('div');
+  handle.style.cssText = 'position:absolute;inset:0;z-index:1;cursor:grab;border-radius:inherit;';
+
+  wrapper.appendChild(iframe);
+  wrapper.appendChild(handle);
+  document.body.appendChild(wrapper);
+
+  /* ── Drag ── */
+  var dragging = false, startX, startY, origRight, origBottom;
+
+  var pressed = false, wasDrag = false;
+
+  handle.addEventListener('mousedown', function (e) {
+    pressed = true;
+    wasDrag = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    var rect = wrapper.getBoundingClientRect();
+    origRight  = window.innerWidth  - rect.right;
+    origBottom = window.innerHeight - rect.bottom;
+    wrapper.style.transition = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!pressed) return;
+    var dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!wasDrag && Math.sqrt(dx * dx + dy * dy) < 5) return;
+    wasDrag = true;
+    handle.style.cursor = 'grabbing';
+    var newRight  = Math.max(8, Math.min(origRight  - dx, window.innerWidth  - 72));
+    var newBottom = Math.max(8, Math.min(origBottom - dy, window.innerHeight - 72));
+    wrapper.style.right  = newRight  + 'px';
+    wrapper.style.bottom = newBottom + 'px';
+    wrapper.style.left = 'auto';
+    wrapper.style.top  = 'auto';
+  });
+
+  document.addEventListener('mouseup', function () {
+    if (!pressed) return;
+    pressed = false;
+    if (wasDrag) {
+      handle.style.cursor = 'grab';
+      wrapper.style.transition = 'width 0.22s ease,height 0.22s ease,border-radius 0.22s ease';
+    } else {
+      /* It was a tap/click — tell the widget to toggle */
+      iframe.contentWindow.postMessage({ type: 'soukpilot:toggle' }, '*');
+    }
+    wasDrag = false;
+  });
+
+  /* ── Resize on open/close ── */
   window.addEventListener('message', function (e) {
     if (!e.data || e.data.type !== 'soukpilot:resize') return;
     var w = e.data.w, h = e.data.h;
     var expanded = w > 100;
-    /* Cap height so the panel never goes above the viewport */
-    var maxH = window.innerHeight - 48;
-    var safeH = expanded ? Math.min(h, maxH) : h;
-    iframe.style.width        = w + 'px';
-    iframe.style.height       = safeH + 'px';
-    iframe.style.borderRadius = expanded ? '16px' : '50%';
-    iframe.style.boxShadow    = expanded
-      ? '0 12px 48px rgba(0,0,0,0.4)'
-      : '0 4px 20px rgba(99,102,241,0.5)';
-  });
+    var pad = 8;
 
-  document.body.appendChild(iframe);
+    var safeW = Math.min(w, window.innerWidth  - pad * 2);
+    var safeH = Math.min(h, window.innerHeight - pad * 2);
+
+    wrapper.style.width        = safeW + 'px';
+    wrapper.style.height       = safeH + 'px';
+    wrapper.style.borderRadius = expanded ? '16px' : '50%';
+    wrapper.style.boxShadow    = expanded ? '0 12px 48px rgba(0,0,0,0.4)' : '0 4px 20px rgba(99,102,241,0.5)';
+
+    if (expanded) {
+      /* Nudge so the full panel is visible — clamp bottom and right */
+      var b = Math.max(pad, Math.min(parseFloat(wrapper.style.bottom) || 24, window.innerHeight - safeH - pad));
+      var r = Math.max(pad, Math.min(parseFloat(wrapper.style.right)  || 24, window.innerWidth  - safeW - pad));
+      wrapper.style.bottom = b + 'px';
+      wrapper.style.right  = r + 'px';
+    }
+
+    /* Hide handle when open so the widget is fully interactive */
+    handle.style.display = expanded ? 'none' : 'block';
+  });
 })();
 <\/script>`;
 }
@@ -58,9 +120,14 @@ export default function WidgetSettings() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [openSnippet, setOpenSnippet] = useState<string | null>(null);
 
+  function authHeaders(): Record<string, string> {
+    const token = localStorage.getItem("soukpilot_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   async function load() {
     try {
-      const res = await fetch(`${BASE}/api/widget/tokens`);
+      const res = await fetch(`${BASE}/api/widget/tokens`, { headers: authHeaders() });
       if (res.ok) setTokens(await res.json());
     } catch { /* non-fatal */ }
   }
@@ -74,7 +141,7 @@ export default function WidgetSettings() {
     try {
       const res = await fetch(`${BASE}/api/widget/tokens`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ label: label.trim() || "My Widget" }),
       });
       if (!res.ok) throw new Error((await res.json()).detail ?? "Failed");
@@ -89,7 +156,7 @@ export default function WidgetSettings() {
 
   async function revoke(token: string) {
     try {
-      await fetch(`${BASE}/api/widget/tokens/${token}`, { method: "DELETE" });
+      await fetch(`${BASE}/api/widget/tokens/${token}`, { method: "DELETE", headers: authHeaders() });
       await load();
       if (openSnippet === token) setOpenSnippet(null);
     } catch { /* non-fatal */ }
