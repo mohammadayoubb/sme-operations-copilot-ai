@@ -9,7 +9,7 @@ RAG, and ML forecasting.
 
 Built as a full-stack capstone project demonstrating production-grade AI
 engineering: background workers, database transactions, Pydantic validation,
-prompt safety guardrails, and a recruiter-ready UI.
+prompt safety guardrails, JWT multi-tenancy, and a recruiter-ready UI.
 
 ---
 
@@ -27,6 +27,11 @@ prompt safety guardrails, and a recruiter-ready UI.
 | 8 | **Agentic Tool-Calling Assistant** | Type or speak any business question → GPT-4o tool loop queries live DB (stock, sales, orders, forecasts, reports) → streams answer with expandable tool-call badges |
 | 9 | **AI Sales Anomaly Detection** | Rolling z-score (14-day window, 2σ threshold) scans every product daily → unusual spikes/drops surfaced on Dashboard with plain-English LLM explanations |
 | 10 | **Guardrails + PII redaction** | Every user input scanned for prompt injection and PII before reaching any LLM |
+| 11 | **Full Multi-Tenant Architecture** | JWT embeds `business_id`; every SQL query scoped to it — complete data isolation between registered businesses |
+| 12 | **2-Tier Super-Admin System** | Standalone `/superadmin` portal — create/delete tenants, view per-tenant usage stats, role separation enforced at the dependency level |
+| 13 | **Order Review Queue** | Confidence score < 0.6 → order held for human review; approve or reject from a dedicated queue UI |
+| 14 | **WhatsApp Webhook (Twilio)** | Inbound WhatsApp messages processed automatically via Twilio webhook with HMAC-SHA1 signature validation |
+| 15 | **AI Drift Detection** | PSI (Population Stability Index) over order feature distributions; flags `warning` / `alert` when order patterns shift from baseline |
 
 ---
 
@@ -42,7 +47,7 @@ prompt safety guardrails, and a recruiter-ready UI.
 git clone <repo-url>
 cd soukpilot-ai
 cp .env.example .env
-# Edit .env and set OPENAI_API_KEY
+# Edit .env — set OPENAI_API_KEY and SECRET_KEY (generate with: openssl rand -hex 32)
 ```
 
 ### 2. Start all services
@@ -54,18 +59,29 @@ docker compose up
 This starts: **FastAPI backend** (`:8080`), **React frontend** (`:5173`),
 **PostgreSQL**, **Redis**, **Celery worker**, **Celery beat**, and **ChromaDB**.
 
-### 3. Seed demo data
+### 3. Run migrations
 
 ```bash
-# Full demo seed (products, 60-day sales, invoices, orders, reports, RAG index, ML retrain)
+docker compose exec backend alembic upgrade head
+```
+
+Creates all 17 tables and seeds the superadmin account (`superadmin` / `superadmin2024`).
+
+### 4. Register your first business
+
+Open **http://localhost:5173/register** and create a business account.
+Or seed a demo tenant:
+
+```bash
 docker compose exec backend python sample_data/seed_demo.py
 ```
 
-### 4. Open the app
+### 5. Open the app
 
 | Service | URL |
 |---|---|
 | Frontend | http://localhost:5173 |
+| Super-Admin Portal | http://localhost:5173/superadmin |
 | API (Swagger) | http://localhost:8080/docs |
 | API (ReDoc) | http://localhost:8080/redoc |
 
@@ -77,21 +93,22 @@ docker compose exec backend python sample_data/seed_demo.py
 soukpilot-ai/
 ├── backend/
 │   └── app/
-│       ├── ai/            # LLM, OCR, embeddings, RAG, forecasting
-│       ├── api/           # FastAPI routers (one file per domain)
-│       ├── services/      # Business logic orchestration
-│       ├── repositories/  # DB queries (SQLAlchemy)
-│       ├── models/        # ORM models
+│       ├── ai/            # LLM, OCR, embeddings, RAG, forecasting, drift, confidence
+│       ├── api/           # FastAPI routers (one file per domain, + admin.py + webhooks.py)
+│       ├── services/      # Business logic (+ admin_service, drift_service)
+│       ├── repositories/  # DB queries (SQLAlchemy, all scoped by business_id)
+│       ├── models/        # ORM models (+ users, businesses, drift_signals)
 │       ├── schemas/       # Pydantic schemas (request/response + LLM output validation)
 │       ├── workers/       # Celery tasks
 │       ├── security/      # Guardrails, PII redaction
-│       └── core/          # Config, DB session, logging
+│       └── core/          # Config, DB session, JWT (security.py), deps.py
+│   └── alembic/versions/  # Migrations 0001–0006
 ├── frontend/
 │   └── src/
-│       ├── pages/         # One page component per feature
+│       ├── pages/         # One page per feature (+ SuperAdmin.tsx)
 │       ├── components/    # Shared UI (PageShell)
-│       └── services/      # Axios API wrappers
-├── tests/                 # 51 pytest tests (no OpenAI or DB required)
+│       └── services/      # Axios API wrappers (+ adminApi, adminHttp)
+├── tests/                 # 71 pytest tests (no OpenAI or DB required)
 ├── sample_data/           # Demo invoices, seed script
 └── ml_models/             # Saved scikit-learn model artifacts
 ```
@@ -116,7 +133,9 @@ See `.env.example` for the full list. Required variables:
 |---|---|
 | `OPENAI_API_KEY` | OpenAI API key (GPT-4o-mini + Whisper + embeddings) |
 | `DATABASE_URL` | PostgreSQL connection string |
+| `SECRET_KEY` | JWT signing key — generate with `openssl rand -hex 32` |
 | `REDIS_URL` | Redis connection string (default: `redis://redis:6379/0`) |
+| `TWILIO_AUTH_TOKEN` | Required for WhatsApp webhook signature validation (optional if not using Twilio) |
 
 ---
 
@@ -135,11 +154,27 @@ See `.env.example` for the full list. Required variables:
 
 | File | What's inside |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, layering rules, full AI data flows |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System diagram, layering rules, full AI data flows, JWT + multitenancy |
 | [docs/AI_FEATURES.md](docs/AI_FEATURES.md) | Prompt templates, validation strategy, design decisions per feature |
-| [docs/SECURITY.md](docs/SECURITY.md) | Guardrails design, PII redaction, agentic tool-call security |
+| [docs/SECURITY.md](docs/SECURITY.md) | JWT auth, tenant isolation, 2-tier roles, guardrails, Twilio validation |
 | [docs/EVALS.md](docs/EVALS.md) | Test cases, evaluation methodology, benchmark results |
-| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deployment, seeding, retraining, troubleshooting |
-| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Step-by-step recruiter demo script |
-| [docs/NEW_FEATURES.md](docs/NEW_FEATURES.md) | Post-MVP feature changelog |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Env vars, migrations, superadmin, deployment guide (Railway/Render/Fly), troubleshooting |
+| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Step-by-step demo script including superadmin and multitenancy steps |
+| [docs/NEW_FEATURES.md](docs/NEW_FEATURES.md) | Post-MVP feature changelog (confidence scoring, order review queue) |
+| [docs/NEW_FEATURES_2.md](docs/NEW_FEATURES_2.md) | Webhooks + drift detection changelog |
+| [docs/NEW_FEATURES_3.md](docs/NEW_FEATURES_3.md) | Multi-tenancy + super-admin + drift detection (full detail) |
 | [docs/phases/](docs/phases/) | Build history: implementation plan + phase summaries |
+
+---
+
+## Deployment
+
+SoukPilot can be deployed to any platform that supports Docker. The fastest
+path for a presentation:
+
+- **Railway**: push to GitHub → connect repo → set env vars → `alembic upgrade head`
+- **Render**: web service (backend) + background worker + static site (frontend)
+- **Fly.io**: `fly launch` with Fly Postgres + Fly Redis
+
+See [docs/RUNBOOK.md](docs/RUNBOOK.md) for a full deployment checklist including
+TLS, secret rotation, and the default superadmin password change.

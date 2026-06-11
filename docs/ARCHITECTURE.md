@@ -3,28 +3,39 @@
 ## System Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                       React Frontend (Vite)                       │
-│  Dashboard · Invoices · Orders · Inventory · Pricing             │
-│  Business Q&A · Reports · Voice Copilot · AI Agent Chat          │
-└──────────────────────────┬───────────────────────────────────────┘
-                           │  HTTP / REST · SSE streaming
-                           ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                     FastAPI Backend (:8080)                        │
-│                                                                    │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐           │
-│  │ invoices │ │  orders  │ │ products │ │  pricing  │           │
-│  │    API   │ │    API   │ │    API   │ │    API    │           │
-│  └──────────┘ └──────────┘ └──────────┘ └───────────┘           │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐           │
-│  │ forecast │ │  qa/ask  │ │  reports │ │   voice   │           │
-│  │    API   │ │ (stream) │ │    API   │ │ transcribe│           │
-│  └──────────┘ └──────────┘ └──────────┘ │ /speak    │           │
-│  ┌──────────┐ ┌───────────────────────┐  └───────────┘           │
-│  │ anomaly  │ │   agent/chat/stream   │                           │
-│  │   API    │ │  (tool-calling loop)  │                           │
-│  └──────────┘ └───────────────────────┘                           │
+┌─────────────────────────────────────────────────────────────────────┐
+│                    React Frontend (Vite)                              │
+│  Dashboard · Invoices · Orders · Inventory · Pricing                 │
+│  Business Q&A · Reports · Voice Copilot · AI Agent Chat              │
+│  /superadmin ← standalone portal (own auth, no sidebar)              │
+└───────────────────────────┬─────────────────────────────────────────┘
+                            │  HTTP / REST · SSE streaming
+                            │  Bearer JWT (business_id + role embedded)
+                            ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     FastAPI Backend (:8080)                           │
+│                                                                       │
+│  ── Auth (public) ─────────────────────────────────────────────────  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐    │
+│  │  /auth   │  │ /widget  │  │/webhooks │  │   /api/admin     │    │
+│  │ register │  │ own token│  │  Twilio  │  │ superadmin only  │    │
+│  │  login   │  │   auth   │  │ sig-val  │  │ get_current_     │    │
+│  └──────────┘  └──────────┘  └──────────┘  │  superadmin dep  │    │
+│                                              └──────────────────┘    │
+│  ── Business routes (JWT required — get_current_user dep) ─────────  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐              │
+│  │ invoices │ │  orders  │ │ products │ │  pricing  │              │
+│  │    API   │ │    API   │ │    API   │ │    API    │              │
+│  └──────────┘ └──────────┘ └──────────┘ └───────────┘              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐              │
+│  │ forecast │ │  qa/ask  │ │  reports │ │   voice   │              │
+│  │    API   │ │ (stream) │ │    API   │ │ transcribe│              │
+│  └──────────┘ └──────────┘ └──────────┘ │ /speak    │              │
+│  ┌──────────┐ ┌───────────────────────┐  └───────────┘              │
+│  │ anomaly  │ │   agent/chat/stream   │  ┌───────────┐              │
+│  │   API    │ │  (tool-calling loop)  │  │   drift   │              │
+│  └──────────┘ └───────────────────────┘  │    API    │              │
+│                                           └───────────┘              │
 │                           │                                        │
 │  ┌────────────────────────▼─────────────────────────────────────┐ │
 │  │                    Services Layer                             │ │
@@ -96,13 +107,15 @@ exactly one layer, leaving all others untouched.
 | Service | Owns |
 |---|---|
 | `invoice_service` | OCR dispatch, LLM extraction, price comparison, stock update, price-increase alerts |
-| `order_service` | Guardrail check, LLM extraction, fuzzy product matching, inventory reservation, low-stock alerts |
+| `order_service` | Guardrail check, LLM extraction, confidence scoring, fuzzy product matching, inventory reservation, review queue management |
 | `pricing_service` | Python margin calculation, LLM explanation |
 | `forecasting_service` | Feature engineering, model load/train, per-product inference, reorder recommendation list |
 | `rag_service` | Document summarisation, parent-child chunking, embedding, BM25+vector hybrid retrieval (RRF), grounded answer generation (streaming) |
 | `report_service` | Python aggregation (sales, profit, margins), LLM narrative, report persistence, HTML/PDF export |
 | `agent_service` | GPT-4o tool-calling loop (up to 8 iterations), 7 read/write tools, streaming SSE output |
 | `anomaly_service` | Rolling z-score anomaly detection over daily sales, batch LLM explanation of flagged anomalies |
+| `drift_service` | PSI-based distribution shift detection over order features; persists `DriftSignal` rows |
+| `admin_service` | Superadmin: list/create/delete tenants, per-tenant usage stats (no business_id scoping) |
 | `guardrails_service` | PII redaction, prompt injection detection (called by order, QA, voice, and agent services) |
 
 ---
@@ -127,21 +140,29 @@ The API returns `202 Accepted` immediately on upload; the frontend polls
 ## Database Schema (key tables)
 
 ```
-businesses          ← single-tenant default business
-products            ← name, current_stock, reorder_level, cost_price, selling_price
-suppliers           ← name, contact
-invoices            ← file_path, raw_ocr_text, extracted_json, status
+businesses          ← tenant root — one row per registered business
+users               ← username, hashed_password, role (owner/staff/superadmin), business_id (nullable for superadmin)
+suppliers           ← name, contact, business_id
+products            ← name, current_stock, reorder_level, cost_price, selling_price, business_id
+invoices            ← file_path, raw_ocr_text, extracted_json, status, business_id
 invoice_items       ← per-line: quantity, unit_price, price_change_pct
-orders              ← raw_message, extracted_json, delivery_area, payment_method
+orders              ← raw_message, extracted_json, delivery_area, payment_method,
+                       confidence_score, review_status, business_id
 order_items         ← product, quantity, color, size
-sales               ← product_id, quantity, total, sale_date, source
-inventory_movements ← delta, reason, reference_id (audit trail)
-alerts              ← type, message, product_id, is_read
-reports             ← period_start/end, summary_text, data_json
-documents           ← source_type, source_id, content (RAG index)
+sales               ← product_id, quantity, total, sale_date, source, business_id
+inventory_movements ← delta, reason, reference_id (audit trail, no business_id — scoped via product)
+alerts              ← type, message, product_id, is_read, business_id
+ai_insights         ← type, reference_id, insight_text, business_id
+reports             ← period_start/end, summary_text, data_json, business_id
+documents           ← source_type, source_id, content (RAG index), business_id
+widget_tokens       ← token (UUID), label, business_id
+drift_signals       ← run_at, psi_score, status (stable/warning/alert), feature_stats (JSONB)
 ```
 
-Full DDL is in `alembic/versions/`.
+Every table except `drift_signals` carries `business_id`. All queries in
+business routes append `WHERE business_id = :bid` — row-level tenant isolation.
+
+Full DDL is in `backend/alembic/versions/` (migrations 0001–0006).
 
 ---
 
@@ -256,6 +277,37 @@ GET /api/anomaly/alerts
 
 ---
 
+## Authentication & Multi-Tenant Isolation
+
+### JWT flow
+
+```
+POST /api/auth/login  →  { access_token, role, business_id }
+                              │
+                         stored in browser localStorage
+                              │
+All subsequent requests:  Authorization: Bearer <token>
+                              │
+                    get_current_user dependency
+                              │
+                    decodes JWT → CurrentUser(username, business_id, role)
+                              │
+                    every service call receives business_id
+                    every SQL query: WHERE business_id = :bid
+```
+
+### Role separation
+
+| Role | business_id | Accesses |
+|---|---|---|
+| `owner` | tenant N | All business routes |
+| `staff` | tenant N | All business routes |
+| `superadmin` | NULL | `/api/admin/*` only |
+
+The two dependency functions (`get_current_user` and `get_current_superadmin`)
+are mutually exclusive — a superadmin token is rejected by `get_current_user`
+and vice versa. Cross-role access is structurally impossible.
+
 ## Security Boundaries
 
 - **All user text** (order messages, QA questions, voice transcripts) passes
@@ -264,5 +316,7 @@ GET /api/anomaly/alerts
   write. If validation fails, the transaction is rolled back.
 - **PII redaction** (`redact_pii`) is applied to log entries; raw messages are
   stored in the DB but never forwarded to logs verbatim.
-- No multi-tenant isolation beyond a simple `business_id` filter (single-owner
-  MVP scope).
+- **Row-level tenant isolation**: every business route filters by `business_id`
+  from the JWT. A tenant cannot access another tenant's data even with a valid token.
+- **Twilio webhook signature validation**: `X-Twilio-Signature` HMAC-SHA1
+  checked against `TWILIO_AUTH_TOKEN` on every inbound WhatsApp webhook.

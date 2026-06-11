@@ -2,10 +2,9 @@
 
 ## Overview
 
-SoukPilot AI is a single-owner MVP. The security model prioritises AI-specific
-risks (prompt injection, unvalidated LLM output, data leakage via logs) over
-traditional auth hardening. Traditional auth (JWT, OAuth) is explicitly
-de-scoped for the capstone — the API runs in a trusted Docker network.
+SoukPilot AI is a multi-tenant SaaS platform. The security model addresses both
+AI-specific risks (prompt injection, unvalidated LLM output, data leakage) and
+traditional SaaS concerns (tenant isolation, role separation, JWT integrity).
 
 ---
 
@@ -18,7 +17,10 @@ de-scoped for the capstone — the API runs in a trusted Docker network.
 | LLM returns malformed/unsafe output | High | Pydantic validation before every DB write |
 | PII in application logs | Medium | `redact_pii()` applied before logging |
 | Malicious file upload | Medium | MIME type + size validation; no execution of uploaded files |
-| Unauthenticated API access | Low (single-owner) | No auth layer in MVP scope |
+| Unauthenticated API access | High | JWT Bearer token required on all business routes |
+| Cross-tenant data access | High | `business_id` embedded in JWT; every SQL query scoped by it |
+| Privilege escalation (tenant → superadmin) | High | Separate dep functions — superadmin token rejected by business routes |
+| Forged Twilio webhook | Medium | HMAC-SHA1 signature validation against `TWILIO_AUTH_TOKEN` |
 
 ---
 
@@ -164,14 +166,61 @@ properties:
 
 ---
 
-## Known Limitations (MVP scope)
+## Authentication & Multi-Tenant Isolation
 
-- **No authentication**: the API has no JWT, API key, or session layer. Suitable
-  for a single-owner local deployment; would require auth before any
-  multi-user or cloud deployment.
-- **No rate limiting**: endpoints are not rate-limited in the current MVP.
-- **No HTTPS**: runs over plain HTTP in Docker Compose. A production deployment
-  would add TLS termination (nginx/Caddy).
+### JWT Authentication
+
+All business API routes require a Bearer JWT in the `Authorization` header.
+Tokens are issued by `POST /api/auth/login` and embed the caller's
+`business_id` and `role`:
+
+```
+{ "sub": "alice", "business_id": 7, "role": "owner", "exp": ... }
+```
+
+The `get_current_user` dependency decodes the token on every request and rejects
+calls with an expired token, an invalid signature, or a missing `business_id`
+(which blocks superadmin tokens from leaking into business routes).
+
+### Row-Level Tenant Isolation
+
+Every SQL query in the business routes appends `WHERE business_id = :bid`
+using the value extracted from the JWT. This is enforced at the dependency
+level — not by convention — so a bug in one endpoint cannot expose
+another tenant's data.
+
+### 2-Tier Role Separation
+
+| Role | `business_id` | Dependency | Routes accessible |
+|---|---|---|---|
+| `owner` / `staff` | tenant N | `get_current_user` | All business routes |
+| `superadmin` | NULL | `get_current_superadmin` | `/api/admin/*` only |
+
+`get_current_superadmin` checks `role == "superadmin"` in the JWT payload
+and raises HTTP 403 otherwise.
+`get_current_user` raises HTTP 401 if `business_id` is null — so a
+superadmin token cannot accidentally access a tenant's data.
+
+The two guards are structurally mutually exclusive; cross-role access
+is impossible by design.
+
+### Twilio Webhook Signature Validation
+
+All inbound WhatsApp messages arrive at `POST /api/webhooks/twilio`.
+Before any order processing, the handler validates the `X-Twilio-Signature`
+header using HMAC-SHA1 over the full request URL and POST parameters,
+keyed with `TWILIO_AUTH_TOKEN`. Requests with an invalid signature are
+rejected with HTTP 403.
+
+---
+
+## Known Limitations
+
+- **No rate limiting**: endpoints are not rate-limited.
+- **No HTTPS** in Docker Compose: runs over plain HTTP locally. A production
+  deployment adds TLS termination (nginx/Caddy/reverse proxy on hosting platform).
 - **Regex-based injection detection**: covers common patterns but can be bypassed
   by sufficiently creative attackers. A more robust approach would use an LLM
-  classifier as a second layer (planned for post-MVP).
+  classifier as a second layer.
+- **Default superadmin credentials** (`superadmin` / `superadmin2024`): must be
+  changed before any public deployment.

@@ -34,7 +34,9 @@ docker compose logs -f worker
 ```bash
 docker compose exec backend alembic upgrade head
 ```
-This creates all 14 tables.
+This runs all 6 migrations (0001–0006) and creates all 17 tables, including
+the `users` table, widget tokens, drift signals, and the seeded `superadmin`
+account.
 
 Services and their default ports:
 
@@ -181,6 +183,8 @@ docker compose restart backend worker
 |---|---|---|---|
 | `OPENAI_API_KEY` | — | ✅ | OpenAI API key |
 | `DATABASE_URL` | — | ✅ | PostgreSQL DSN |
+| `SECRET_KEY` | — | ✅ | JWT signing key — generate with `openssl rand -hex 32` |
+| `JWT_EXPIRE_HOURS` | `24` | | Token lifetime in hours |
 | `REDIS_URL` | `redis://redis:6379/0` | | Celery broker URL |
 | `OPENAI_LLM_MODEL` | `gpt-4o-mini` | | Model for extraction + narration |
 | `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | | Model for RAG embeddings |
@@ -190,6 +194,90 @@ docker compose restart backend worker
 | `MAX_UPLOAD_SIZE_MB` | `20` | | Max invoice upload size |
 | `APP_ENV` | `development` | | `development` or `production` |
 | `ALLOWED_ORIGINS` | `http://localhost:5173,...` | | Comma-separated CORS origins |
+| `TWILIO_ACCOUNT_SID` | — | | Twilio account SID (WhatsApp webhooks) |
+| `TWILIO_AUTH_TOKEN` | — | | Twilio auth token for webhook signature validation |
+| `TWILIO_WHATSAPP_NUMBER` | — | | Twilio WhatsApp sender number (e.g. `whatsapp:+14155238886`) |
+
+---
+
+## Superadmin Access
+
+The superadmin account is seeded by migration 0006.
+
+**Default credentials:** `superadmin` / `superadmin2024`
+**Portal URL:** http://localhost:5173/superadmin
+
+Change the password immediately after any public deployment:
+
+```bash
+# Generate a new bcrypt hash
+docker compose exec backend python -c "
+from app.core.security import hash_password
+print(hash_password('your-new-password'))
+"
+
+# Update the DB
+docker compose exec postgres psql -U soukpilot -d soukpilot -c \
+  "UPDATE users SET hashed_password = '<paste hash here>' WHERE username = 'superadmin';"
+```
+
+The superadmin token is stored in the browser under `soukpilot_admin_token`,
+separate from the tenant `soukpilot_token`. Log out from each independently.
+
+---
+
+## Deployment Guide (Presentation / Production)
+
+SoukPilot runs as a Docker Compose stack; any platform that supports Docker
+or can run individual services works. The recommended path for a quick
+presentation deployment is **Railway** (all services in one project) or
+**Render + Supabase** (managed Postgres).
+
+### Option A — Railway (easiest)
+
+1. Push the repo to GitHub.
+2. Create a new Railway project → "Deploy from GitHub".
+3. Railway detects `docker-compose.yml` automatically.
+4. Set environment variables in Railway's Variables panel (copy from `.env`).
+5. Railway assigns a public domain; set `ALLOWED_ORIGINS` to that domain.
+6. After first deploy, open a Railway shell and run:
+   ```bash
+   alembic upgrade head
+   python sample_data/seed_demo.py
+   ```
+
+### Option B — Render
+
+1. **Database:** Create a Render Postgres instance; copy the DSN.
+2. **Redis:** Create a Render Redis instance; copy the URL.
+3. **Backend:** New "Web Service" → Docker → set all env vars → deploy.
+4. **Worker:** New "Background Worker" → same Docker image → set
+   `CMD` to `celery -A app.worker worker --loglevel=info`.
+5. **Frontend:** New "Static Site" → `npm run build` → publish `dist/`.
+   Set `VITE_API_URL` to the backend's public URL before building.
+
+### Option C — Fly.io
+
+```bash
+fly auth login
+fly launch --dockerfile backend/Dockerfile --name soukpilot-api
+fly secrets set OPENAI_API_KEY=... DATABASE_URL=... SECRET_KEY=...
+fly deploy
+```
+
+Create a Fly Postgres and Redis separately and link them via `DATABASE_URL`
+and `REDIS_URL` secrets.
+
+### Pre-deployment checklist
+
+- [ ] `SECRET_KEY` is a random 32-byte hex string (not the default)
+- [ ] Default superadmin password has been changed
+- [ ] `ALLOWED_ORIGINS` includes only your production domain
+- [ ] `APP_ENV=production` is set
+- [ ] HTTPS is configured on the hosting platform (all three options above
+      provide TLS automatically)
+- [ ] Migrations have been run: `alembic upgrade head`
+- [ ] Demo data seeded if presenting: `python sample_data/seed_demo.py`
 
 ---
 
@@ -207,6 +295,10 @@ docker compose restart backend worker
 | Frontend shows "Failed to load dashboard data" | Backend not reachable — check `docker compose ps` and `curl http://localhost:8080/health` |
 | Weekly report not running on schedule | Check `docker compose logs beat`; manually trigger `POST /api/reports/generate` |
 | Migrations not applied | Run `docker compose exec backend alembic upgrade head` |
+| "Invalid credentials" on superadmin login | Migration 0006 may not have run — run `alembic upgrade head` |
+| Superadmin login redirects to regular app | Browser saved old token; clear `localStorage` or open incognito |
+| JWT 401 on all business routes after re-deploy | `SECRET_KEY` changed — old tokens are invalidated; log in again |
+| Twilio webhook returns 403 | `TWILIO_AUTH_TOKEN` env var not set or incorrect |
 | Voice mic button does nothing | Browser requires HTTPS or `localhost` for microphone access — ensure you're on `http://localhost:5173` |
 | Voice transcription returns empty transcript | Recording was too short or silent — speak clearly for at least 1 second |
 | TTS audio does not play | Check browser autoplay policy; some browsers block audio without a prior user gesture — the mic press counts as one |
