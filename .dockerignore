@@ -1,0 +1,11 @@
+# Build-context excludes for Dockerfile.railway (context = repo root)
+.git
+.env
+frontend/node_modules
+frontend/dist
+backend/__pycache__
+**/__pycache__
+**/*.pyc
+ml_models
+docs
+*.md

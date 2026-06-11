@@ -235,16 +235,14 @@ presentation deployment is **Railway** (all services in one project) or
 
 ### Option A — Railway (easiest)
 
-1. Push the repo to GitHub.
-2. Create a new Railway project → "Deploy from GitHub".
-3. Railway detects `docker-compose.yml` automatically.
-4. Set environment variables in Railway's Variables panel (copy from `.env`).
-5. Railway assigns a public domain; set `ALLOWED_ORIGINS` to that domain.
-6. After first deploy, open a Railway shell and run:
-   ```bash
-   alembic upgrade head
-   python sample_data/seed_demo.py
-   ```
+See the dedicated guide: **[docs/DEPLOY_RAILWAY.md](DEPLOY_RAILWAY.md)**.
+
+Railway does not deploy `docker-compose.yml` as-is (volumes cannot be shared
+between services, and backend + worker share `uploads/` and `ml_models/`).
+Instead the repo ships `Dockerfile.railway`, which runs the API, Celery
+worker, and beat in one container backed by a single volume at `/data`.
+Migrations run automatically on deploy via `deploy/start.sh`; demo data is
+seeded with `railway ssh` → `python sample_data/seed_demo.py`.
 
 ### Option B — Render
 

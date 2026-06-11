@@ -1,0 +1,29 @@
+# Production frontend image — static Vite build served by `serve` (SPA
+# fallback enabled with -s, so React Router routes like /superadmin work on
+# refresh). VITE_API_URL must be provided at BUILD time: it is baked into the
+# bundle. On Railway, setting VITE_API_URL as a service variable makes it
+# available to the ARG below automatically.
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+FROM node:22-alpine
+
+RUN npm install -g serve@14
+
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+
+EXPOSE 4173
+
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-4173}"]

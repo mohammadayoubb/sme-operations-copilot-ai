@@ -1,0 +1,27 @@
+# Railway deployment image — backend API + Celery worker + Celery beat in one
+# container (they share /data for uploads and ML model artifacts, which Railway
+# cannot do across separate services). Build context: repository root.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps for psycopg2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/ .
+COPY sample_data/ ./sample_data/
+COPY deploy/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+# Lets `python sample_data/seed_demo.py` resolve `app.*` imports
+ENV PYTHONPATH=/app
+
+EXPOSE 8080
+
+CMD ["bash", "./start.sh"]
