@@ -31,6 +31,16 @@ class Settings(BaseSettings):
     upload_dir: str = "/app/uploads"
     max_upload_size_mb: int = 20
 
+    # JWT Auth (single hardcoded admin — demo only)
+    admin_username: str = "admin"
+    admin_password: str = "soukpilot2024"
+    jwt_expire_hours: int = 8
+
+    # Twilio WhatsApp webhook (optional — leave blank to disable signature validation in dev)
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_whatsapp_from: str = "whatsapp:+14155238886"  # Twilio sandbox default
+
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]

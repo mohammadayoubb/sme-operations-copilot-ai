@@ -14,7 +14,9 @@ class Order(Base):
     extracted_json = Column(JSONB)              # validated LLM extraction output
     delivery_area = Column(String(255))
     payment_method = Column(String(100))         # cash_on_delivery, bank_transfer, other
-    status = Column(String(50), server_default="pending")  # pending, confirmed, fulfilled, cancelled
+    status = Column(String(50), server_default="pending")  # pending, pending_review, confirmed, fulfilled, cancelled
+    confidence_score = Column(Float, server_default="1.0")  # [0,1] — below threshold routes to review queue
+    review_status = Column(String(50), server_default="auto_approved")  # auto_approved, needs_review, approved, rejected
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 

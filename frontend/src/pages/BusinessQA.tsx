@@ -50,9 +50,13 @@ export default function BusinessQA() {
     setBusy(true);
 
     try {
+      const token = localStorage.getItem("soukpilot_token");
       const res = await fetch(`${BASE}/api/qa/ask/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ question: query }),
       });
 

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SoukPilot Logo Variants</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f0f14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px 24px; }
+  h1 { color: rgba(255,255,255,0.5); font-size: 13px; letter-spacing: 4px; text-transform: uppercase; text-align: center; margin-bottom: 48px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto; }
+  .card { background: #13131f; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+  .card-label { padding: 14px 20px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35); border-top: 1px solid rgba(255,255,255,0.06); text-align: center; }
+  .logo-wrap { display: flex; align-items: center; justify-content: center; padding: 24px; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<h1>SoukPilot — Logo Variants</h1>
+<div class="grid">
+
+  <!-- ─── VARIANT 1 · Current (Dark Glow) ─────────────────────── -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bg1" cx="50%" cy="42%" r="65%">
+            <stop offset="0%" stop-color="#111328"/>
+            <stop offset="100%" stop-color="#060818"/>
+          </radialGradient>
+          <radialGradient id="ag1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(99,102,241,0.28)"/>
+            <stop offset="100%" stop-color="rgba(99,102,241,0)"/>
+          </radialGradient>
+          <filter id="glow1" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="800" height="800" rx="120" fill="url(#bg1)"/>
+        <ellipse cx="160" cy="160" rx="220" ry="200" fill="rgba(99,102,241,0.07)"/>
+        <ellipse cx="660" cy="660" rx="200" ry="180" fill="rgba(168,85,247,0.06)"/>
+        <ellipse cx="400" cy="310" rx="210" ry="230" fill="url(#ag1)"/>
+        <g transform="translate(256,108) scale(8)" filter="url(#glow1)">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#818cf8" stroke-width="2.1" stroke-linecap="round" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="#a5b4fc" stroke-width="1.1" stroke-linecap="round" fill="none" opacity="0.45"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="#818cf8" stroke-width="2.1" stroke-linecap="round"/>
+        </g>
+        <line x1="300" y1="480" x2="500" y2="480" stroke="rgba(129,140,248,0.2)" stroke-width="1" stroke-linecap="round"/>
+        <text x="400" y="548" font-family="inherit" font-size="42" font-weight="300" fill="rgba(255,255,255,0.28)" text-anchor="middle" letter-spacing="22">SOUK</text>
+        <text x="388" y="640" font-family="inherit" font-size="82" font-weight="800" fill="rgba(255,255,255,0.92)" text-anchor="middle" letter-spacing="14">PILOT</text>
+        <text x="614" y="640" font-family="inherit" font-size="28" font-weight="700" fill="#818cf8" letter-spacing="2">AI</text>
+        <text x="400" y="714" font-family="inherit" font-size="18" font-weight="400" fill="rgba(255,255,255,0.14)" text-anchor="middle" letter-spacing="5">OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">A · Current — Dark Glow</div>
+  </div>
+
+  <!-- ─── VARIANT 2 · Gradient Wordmark ──────────────────────────── -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0d0d1a"/>
+            <stop offset="100%" stop-color="#0a0820"/>
+          </linearGradient>
+          <linearGradient id="wordGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#818cf8"/>
+            <stop offset="100%" stop-color="#c084fc"/>
+          </linearGradient>
+          <linearGradient id="archGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#c084fc"/>
+            <stop offset="100%" stop-color="#818cf8"/>
+          </linearGradient>
+          <filter id="glow2" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow2b" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="800" height="800" rx="120" fill="url(#bg2)"/>
+        <!-- grid lines subtle -->
+        <line x1="0" y1="400" x2="800" y2="400" stroke="rgba(129,140,248,0.04)" stroke-width="1"/>
+        <line x1="400" y1="0" x2="400" y2="800" stroke="rgba(129,140,248,0.04)" stroke-width="1"/>
+        <!-- arch -->
+        <g transform="translate(256,90) scale(8)" filter="url(#glow2)">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="url(#archGrad)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="rgba(192,132,252,0.4)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="url(#archGrad)" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+        <!-- gradient wordmark -->
+        <text x="400" y="580" font-family="inherit" font-size="100" font-weight="900" fill="url(#wordGrad)" text-anchor="middle" letter-spacing="8" filter="url(#glow2b)">SOUK</text>
+        <text x="400" y="678" font-family="inherit" font-size="44" font-weight="300" fill="rgba(255,255,255,0.4)" text-anchor="middle" letter-spacing="18">PILOT  AI</text>
+        <text x="400" y="730" font-family="inherit" font-size="15" font-weight="400" fill="rgba(255,255,255,0.12)" text-anchor="middle" letter-spacing="6">OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">B · Gradient Wordmark</div>
+  </div>
+
+  <!-- ─── VARIANT 3 · Minimal / Pure White ────────────────────────── -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow3" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="800" height="800" rx="120" fill="#050508"/>
+        <!-- large faint arch watermark -->
+        <g transform="translate(160,60) scale(26.5)" opacity="0.03">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="white" stroke-width="2" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="white" stroke-width="1.2" fill="none"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="white" stroke-width="2"/>
+        </g>
+        <!-- small sharp arch -->
+        <g transform="translate(280,130) scale(6.7)" filter="url(#glow3)">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="white" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="rgba(255,255,255,0.35)" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+        </g>
+        <!-- horizontal rule -->
+        <line x1="260" y1="502" x2="540" y2="502" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <text x="400" y="576" font-family="inherit" font-size="52" font-weight="800" fill="white" text-anchor="middle" letter-spacing="20">SOUKPILOT</text>
+        <text x="400" y="632" font-family="inherit" font-size="20" font-weight="300" fill="rgba(255,255,255,0.3)" text-anchor="middle" letter-spacing="10">AI  ·  OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">C · Minimal Monochrome</div>
+  </div>
+
+  <!-- ─── VARIANT 4 · Stacked Badge ─────────────────────────────── -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bg4" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#1e1b4b"/>
+            <stop offset="100%" stop-color="#0a0818"/>
+          </radialGradient>
+          <linearGradient id="pill4" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+          <filter id="glow4" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="pillShadow" x="-20%" y="-30%" width="140%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="800" height="800" rx="120" fill="url(#bg4)"/>
+        <!-- glow ring behind arch -->
+        <circle cx="400" cy="260" r="180" fill="none" stroke="rgba(99,102,241,0.12)" stroke-width="60"/>
+        <!-- arch centered -->
+        <g transform="translate(256,100) scale(8)" filter="url(#glow4)">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#a5b4fc" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="rgba(165,180,252,0.4)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="#a5b4fc" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+        <!-- "AI" pill badge -->
+        <rect x="344" y="488" width="112" height="46" rx="23" fill="url(#pill4)" filter="url(#pillShadow)"/>
+        <text x="400" y="518" font-family="inherit" font-size="22" font-weight="700" fill="white" text-anchor="middle" letter-spacing="3">AI</text>
+        <!-- SOUKPILOT stacked -->
+        <text x="400" y="608" font-family="inherit" font-size="64" font-weight="900" fill="white" text-anchor="middle" letter-spacing="6">SOUK</text>
+        <text x="400" y="686" font-family="inherit" font-size="64" font-weight="200" fill="rgba(255,255,255,0.6)" text-anchor="middle" letter-spacing="10">PILOT</text>
+        <text x="400" y="736" font-family="inherit" font-size="14" font-weight="400" fill="rgba(255,255,255,0.15)" text-anchor="middle" letter-spacing="5">OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">D · Stacked Badge + Ring</div>
+  </div>
+
+  <!-- ─── VARIANT 5 · Light / Inverted ────────────────────────────── -->
+  <div class="card">
+    <div class="logo-wrap" style="background:#f4f4f8; border-radius:12px;">
+      <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bg5" cx="50%" cy="40%" r="70%">
+            <stop offset="0%" stop-color="#eef0ff"/>
+            <stop offset="100%" stop-color="#dde0fa"/>
+          </radialGradient>
+          <filter id="glow5" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="800" height="800" rx="120" fill="url(#bg5)"/>
+        <ellipse cx="400" cy="280" rx="200" ry="180" fill="rgba(99,102,241,0.08)"/>
+        <g transform="translate(256,108) scale(8)" filter="url(#glow5)">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#4f46e5" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="#818cf8" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.6"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="#4f46e5" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+        <line x1="300" y1="480" x2="500" y2="480" stroke="rgba(79,70,229,0.15)" stroke-width="1"/>
+        <text x="400" y="548" font-family="inherit" font-size="42" font-weight="300" fill="rgba(30,27,75,0.3)" text-anchor="middle" letter-spacing="22">SOUK</text>
+        <text x="388" y="640" font-family="inherit" font-size="82" font-weight="800" fill="#1e1b4b" text-anchor="middle" letter-spacing="14">PILOT</text>
+        <text x="614" y="640" font-family="inherit" font-size="28" font-weight="700" fill="#6366f1" letter-spacing="2">AI</text>
+        <text x="400" y="714" font-family="inherit" font-size="18" font-weight="400" fill="rgba(30,27,75,0.2)" text-anchor="middle" letter-spacing="5">OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">E · Light / Inverted</div>
+  </div>
+
+  <!-- ─── VARIANT 6 · Neon Outline ────────────────────────────────── -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="400" height="400" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bg6" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stop-color="#0c0c14"/>
+            <stop offset="100%" stop-color="#040408"/>
+          </radialGradient>
+          <filter id="neon" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur1"/>
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur2"/>
+            <feMerge>
+              <feMergeNode in="blur1"/>
+              <feMergeNode in="blur2"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="neonText" x="-20%" y="-40%" width="140%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="800" height="800" rx="120" fill="url(#bg6)"/>
+        <!-- faint scanlines effect -->
+        <rect width="800" height="800" rx="120" fill="url(#bg6)" opacity="0.3"/>
+        <!-- neon arch -->
+        <g transform="translate(256,100) scale(8)" filter="url(#neon)">
+          <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="#818cf8" stroke-width="1.0" stroke-linecap="round" fill="none" opacity="0.7"/>
+          <line x1="1" y1="36" x2="35" y2="36" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+        </g>
+        <!-- neon text -->
+        <text x="400" y="556" font-family="inherit" font-size="48" font-weight="300" fill="#38bdf8" text-anchor="middle" letter-spacing="20" filter="url(#neonText)" opacity="0.7">SOUK</text>
+        <text x="400" y="650" font-family="inherit" font-size="86" font-weight="900" fill="white" text-anchor="middle" letter-spacing="10" filter="url(#neonText)">PILOT</text>
+        <text x="400" y="706" font-family="inherit" font-size="20" font-weight="400" fill="#818cf8" text-anchor="middle" letter-spacing="6" opacity="0.7">AI  OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">F · Neon / Cyber</div>
+  </div>
+
+</div>
+</body>
+</html>

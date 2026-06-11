@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SoukPilot — New Logo Concepts</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #08080f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 48px 32px; }
+  h1 { color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 5px; text-transform: uppercase; text-align: center; margin-bottom: 52px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; max-width: 960px; margin: 0 auto; }
+  .card { background: #0e0e18; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.07); }
+  .card-label { padding: 16px 24px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.3); border-top: 1px solid rgba(255,255,255,0.06); text-align: center; }
+  .card-sub { font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.15); margin-top: 3px; }
+  .logo-wrap { display: flex; align-items: center; justify-content: center; padding: 32px; }
+</style>
+</head>
+<body>
+<h1>SoukPilot AI — New Logo Concepts</h1>
+<div class="grid">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CONCEPT 1 · KUFIC MARK
+       Geometric block letterform — SP initials built from
+       right-angle strokes like Kufic calligraphy tiles
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="380" height="380" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="k-bg" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stop-color="#16162a"/>
+            <stop offset="100%" stop-color="#09090f"/>
+          </radialGradient>
+          <linearGradient id="k-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#818cf8"/>
+            <stop offset="100%" stop-color="#6366f1"/>
+          </linearGradient>
+          <filter id="k-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="800" height="800" rx="128" fill="url(#k-bg)"/>
+
+        <!--
+          KUFIC "SP" MARK
+          Built on a 10×10 unit grid (each unit = 40px), origin at (160, 140)
+          S shape: uses right-angle block strokes
+          P shape: right side block
+          Total mark width: 480px (12u), height: 360px (9u)
+          Unit size: 40px
+        -->
+
+        <!-- S LETTER (block kufic) — left half -->
+        <!-- Top bar -->
+        <rect x="160" y="140" width="200" height="50" rx="6" fill="url(#k-fill)" filter="url(#k-glow)"/>
+        <!-- Top-left vertical -->
+        <rect x="160" y="140" width="50" height="110" rx="6" fill="url(#k-fill)"/>
+        <!-- Middle bar -->
+        <rect x="160" y="250" width="200" height="50" rx="6" fill="url(#k-fill)" filter="url(#k-glow)"/>
+        <!-- Bottom-right vertical -->
+        <rect x="310" y="250" width="50" height="110" rx="6" fill="url(#k-fill)"/>
+        <!-- Bottom bar -->
+        <rect x="160" y="360" width="200" height="50" rx="6" fill="url(#k-fill)" filter="url(#k-glow)"/>
+
+        <!-- Spacer gap: 40px between S and P -->
+
+        <!-- P LETTER (block kufic) — right half -->
+        <!-- Left vertical (full height) -->
+        <rect x="440" y="140" width="50" height="270" rx="6" fill="url(#k-fill)"/>
+        <!-- Top bar -->
+        <rect x="440" y="140" width="200" height="50" rx="6" fill="url(#k-fill)" filter="url(#k-glow)"/>
+        <!-- Right vertical (top half only) -->
+        <rect x="590" y="140" width="50" height="140" rx="6" fill="url(#k-fill)"/>
+        <!-- Middle bar -->
+        <rect x="440" y="230" width="200" height="50" rx="6" fill="url(#k-fill)" filter="url(#k-glow)"/>
+
+        <!-- Wordmark below -->
+        <text x="400" y="508"
+              font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+              font-size="28" font-weight="700" letter-spacing="10"
+              fill="rgba(255,255,255,0.7)" text-anchor="middle">SOUKPILOT</text>
+        <text x="400" y="546"
+              font-family="inherit" font-size="14" font-weight="300" letter-spacing="6"
+              fill="rgba(129,140,248,0.6)" text-anchor="middle">AI  ·  OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">01 · Kufic Mark
+      <div class="card-sub">Geometric block SP initials — Kufic tile style</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CONCEPT 2 · COMPASS NAVIGATOR
+       A compass rose — the needle points up like a pilot's
+       heading indicator, 8 directional points, center dot
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="380" height="380" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="c-bg" cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stop-color="#0f1420"/>
+            <stop offset="100%" stop-color="#070a12"/>
+          </radialGradient>
+          <radialGradient id="c-ring" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(99,102,241,0)"/>
+            <stop offset="70%" stop-color="rgba(99,102,241,0.06)"/>
+            <stop offset="100%" stop-color="rgba(99,102,241,0.18)"/>
+          </radialGradient>
+          <linearGradient id="c-north" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#c084fc"/>
+            <stop offset="100%" stop-color="#818cf8"/>
+          </linearGradient>
+          <linearGradient id="c-south" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+          </linearGradient>
+          <filter id="c-glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="800" height="800" rx="128" fill="url(#c-bg)"/>
+
+        <!-- outer ring glow -->
+        <circle cx="400" cy="330" r="210" fill="url(#c-ring)"/>
+        <!-- outer ring stroke -->
+        <circle cx="400" cy="330" r="200" fill="none" stroke="rgba(129,140,248,0.15)" stroke-width="1.5"/>
+        <!-- inner ring -->
+        <circle cx="400" cy="330" r="150" fill="none" stroke="rgba(129,140,248,0.08)" stroke-width="1"/>
+
+        <!-- 8 tick marks at compass points -->
+        <!-- N,S,E,W long ticks -->
+        <line x1="400" y1="130" x2="400" y2="162" stroke="rgba(129,140,248,0.5)" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="400" y1="498" x2="400" y2="530" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="200" y1="330" x2="232" y2="330" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="568" y1="330" x2="600" y2="330" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
+        <!-- diagonal short ticks -->
+        <line x1="259" y1="189" x2="278" y2="208" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="522" y1="189" x2="541" y2="208" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="259" y1="471" x2="278" y2="452" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="522" y1="471" x2="541" y2="452" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
+
+        <!-- NORTH needle (pointed up — the "pilot" needle) -->
+        <polygon points="400,160 414,330 400,310 386,330"
+                 fill="url(#c-north)" filter="url(#c-glow)"/>
+        <!-- SOUTH needle (faded down) -->
+        <polygon points="400,500 414,330 400,350 386,330"
+                 fill="url(#c-south)"/>
+
+        <!-- center dot -->
+        <circle cx="400" cy="330" r="12" fill="#818cf8" filter="url(#c-glow)"/>
+        <circle cx="400" cy="330" r="5" fill="white"/>
+
+        <!-- N label -->
+        <text x="400" y="122" font-family="inherit" font-size="18" font-weight="700"
+              fill="#c084fc" text-anchor="middle" letter-spacing="1">N</text>
+
+        <!-- wordmark -->
+        <text x="400" y="596" font-family="inherit" font-size="52" font-weight="800"
+              fill="white" text-anchor="middle" letter-spacing="8">SOUKPILOT</text>
+        <text x="400" y="642" font-family="inherit" font-size="16" font-weight="300"
+              fill="rgba(129,140,248,0.6)" text-anchor="middle" letter-spacing="5">AI  OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">02 · Compass Navigator
+      <div class="card-sub">Pilot's heading needle — guiding your operations</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CONCEPT 3 · CEDAR CIRCUIT
+       Lebanese cedar abstracted into PCB trace geometry —
+       trunk as vertical bar, branches as horizontal traces,
+       circuit nodes at branch ends
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="380" height="380" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="cc-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#091210"/>
+            <stop offset="100%" stop-color="#050c0a"/>
+          </linearGradient>
+          <linearGradient id="cc-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#34d399"/>
+            <stop offset="50%" stop-color="#10b981"/>
+            <stop offset="100%" stop-color="#059669"/>
+          </linearGradient>
+          <filter id="cc-glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="cc-soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="800" height="800" rx="128" fill="url(#cc-bg)"/>
+        <!-- bg halo -->
+        <ellipse cx="400" cy="310" rx="180" ry="200" fill="rgba(16,185,129,0.05)"/>
+
+        <!--
+          Cedar Circuit mark — trunk + 3 tiers of branches
+          All right-angle PCB traces, nodes (circles) at tips
+          Trunk: x=400, y=160 to y=460
+          Tier 1 (top, short): y=200 — L/R to x=340/460, then up to y=170 — node
+          Tier 2 (mid): y=280 — L/R to x=280/520, then up to y=250 — node
+          Tier 3 (wide): y=360 — L/R to x=220/580, then up to y=330 — node
+        -->
+
+        <!-- Trunk -->
+        <line x1="400" y1="160" x2="400" y2="460"
+              stroke="url(#cc-grad)" stroke-width="8" stroke-linecap="round" filter="url(#cc-glow)"/>
+
+        <!-- Tier 1 — top branches -->
+        <polyline points="400,210 340,210 340,175"
+                  fill="none" stroke="url(#cc-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="400,210 460,210 460,175"
+                  fill="none" stroke="url(#cc-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="340" cy="175" r="9" fill="#34d399" filter="url(#cc-glow)"/>
+        <circle cx="460" cy="175" r="9" fill="#34d399" filter="url(#cc-glow)"/>
+
+        <!-- Tier 2 — mid branches -->
+        <polyline points="400,290 280,290 280,255"
+                  fill="none" stroke="url(#cc-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="400,290 520,290 520,255"
+                  fill="none" stroke="url(#cc-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="280" cy="255" r="9" fill="#10b981" filter="url(#cc-glow)"/>
+        <circle cx="520" cy="255" r="9" fill="#10b981" filter="url(#cc-glow)"/>
+
+        <!-- Tier 3 — wide branches -->
+        <polyline points="400,370 220,370 220,335"
+                  fill="none" stroke="url(#cc-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="400,370 580,370 580,335"
+                  fill="none" stroke="url(#cc-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="220" cy="335" r="9" fill="#059669" filter="url(#cc-glow)"/>
+        <circle cx="580" cy="335" r="9" fill="#059669" filter="url(#cc-glow)"/>
+
+        <!-- Ground / roots -->
+        <line x1="340" y1="460" x2="460" y2="460"
+              stroke="rgba(52,211,153,0.4)" stroke-width="4" stroke-linecap="round"/>
+        <line x1="370" y1="460" x2="370" y2="490"
+              stroke="rgba(52,211,153,0.25)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="400" y1="460" x2="400" y2="500"
+              stroke="rgba(52,211,153,0.25)" stroke-width="3" stroke-linecap="round"/>
+        <line x1="430" y1="460" x2="430" y2="490"
+              stroke="rgba(52,211,153,0.25)" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- Wordmark -->
+        <text x="400" y="568" font-family="inherit" font-size="42" font-weight="800"
+              fill="white" text-anchor="middle" letter-spacing="8">SOUKPILOT</text>
+        <text x="400" y="608" font-family="inherit" font-size="15" font-weight="300"
+              fill="rgba(52,211,153,0.55)" text-anchor="middle" letter-spacing="5">AI  ·  OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">03 · Cedar Circuit
+      <div class="card-sub">Lebanese cedar × PCB traces — roots &amp; tech</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CONCEPT 4 · SOUK GRID
+       Overhead aerial view of a market — a grid of stalls
+       arranged to form a bold negative-space "S"
+       warm gold palette, market energy
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-wrap">
+      <svg width="380" height="380" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="sg-bg" cx="50%" cy="40%" r="65%">
+            <stop offset="0%" stop-color="#1a1208"/>
+            <stop offset="100%" stop-color="#0d0a04"/>
+          </radialGradient>
+          <linearGradient id="sg-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fbbf24"/>
+            <stop offset="100%" stop-color="#d97706"/>
+          </linearGradient>
+          <filter id="sg-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <rect width="800" height="800" rx="128" fill="url(#sg-bg)"/>
+        <ellipse cx="400" cy="320" rx="240" ry="200" fill="rgba(251,191,36,0.04)"/>
+
+        <!--
+          SOUK GRID mark — 7 columns × 8 rows of stall blocks
+          Cell size: 52px, gap: 10px → step = 62px
+          Grid origin: x=152, y=106
+          Stall color: amber/gold
+          "S" negative space: leave certain cells EMPTY (background shows through)
+
+          Grid map (1=filled, 0=empty — S shape negative space):
+          Col:  0 1 2 3 4 5 6
+          Row0: 0 0 0 0 0 0 0   ← top row all empty (top gap of S)
+          Row1: 0 1 1 1 1 1 0   ← top bar of S (cells 1-5)
+          Row2: 0 1 0 0 0 0 0   ← top-left leg
+          Row3: 0 1 0 0 0 0 0
+          Row4: 0 1 1 1 1 1 0   ← middle bar
+          Row5: 0 0 0 0 0 1 0   ← bottom-right leg
+          Row6: 0 0 0 0 0 1 0
+          Row7: 0 1 1 1 1 1 0   ← bottom bar
+          Row8: 0 0 0 0 0 0 0   ← bottom gap
+        -->
+
+        <!-- Using explicit rect for each filled cell -->
+        <!-- Cell size 52, gap 10, step 62, origin (152,106) -->
+
+        <!-- Row 1: cols 1-5 (top bar) -->
+        <rect x="214" y="168" width="52" height="52" rx="8" fill="url(#sg-gold)" filter="url(#sg-glow)" opacity="0.9"/>
+        <rect x="276" y="168" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="338" y="168" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="400" y="168" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="462" y="168" width="52" height="52" rx="8" fill="url(#sg-gold)" filter="url(#sg-glow)" opacity="0.9"/>
+
+        <!-- Row 2: col 1 only -->
+        <rect x="214" y="230" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.75"/>
+
+        <!-- Row 3: col 1 only -->
+        <rect x="214" y="292" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.75"/>
+
+        <!-- Row 4: cols 1-5 (middle bar) -->
+        <rect x="214" y="354" width="52" height="52" rx="8" fill="url(#sg-gold)" filter="url(#sg-glow)" opacity="0.95"/>
+        <rect x="276" y="354" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="338" y="354" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="400" y="354" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="462" y="354" width="52" height="52" rx="8" fill="url(#sg-gold)" filter="url(#sg-glow)" opacity="0.95"/>
+
+        <!-- Row 5: col 5 only -->
+        <rect x="462" y="416" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.75"/>
+
+        <!-- Row 6: col 5 only -->
+        <rect x="462" y="478" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.75"/>
+
+        <!-- Row 7: cols 1-5 (bottom bar) -->
+        <rect x="214" y="540" width="52" height="52" rx="8" fill="url(#sg-gold)" filter="url(#sg-glow)" opacity="0.9"/>
+        <rect x="276" y="540" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="338" y="540" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="400" y="540" width="52" height="52" rx="8" fill="url(#sg-gold)" opacity="0.85"/>
+        <rect x="462" y="540" width="52" height="52" rx="8" fill="url(#sg-gold)" filter="url(#sg-glow)" opacity="0.9"/>
+
+        <!-- Wordmark -->
+        <text x="400" y="660" font-family="inherit" font-size="36" font-weight="800"
+              fill="rgba(255,255,255,0.85)" text-anchor="middle" letter-spacing="10">SOUKPILOT</text>
+        <text x="400" y="698" font-family="inherit" font-size="13" font-weight="300"
+              fill="rgba(251,191,36,0.5)" text-anchor="middle" letter-spacing="5">AI  ·  OPERATIONS COPILOT</text>
+      </svg>
+    </div>
+    <div class="card-label">04 · Souk Grid
+      <div class="card-sub">Market stall grid forming an S — gold palette</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

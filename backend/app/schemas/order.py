@@ -83,6 +83,8 @@ class OrderListItem(BaseModel):
     delivery_area: Optional[str]
     payment_method: Optional[str]
     status: str
+    confidence_score: Optional[float] = None
+    review_status: Optional[str] = None
     created_at: Optional[datetime]
 
     model_config = {"from_attributes": True}

@@ -125,9 +125,13 @@ export default function AgentChat() {
     };
 
     try {
+      const token = localStorage.getItem("soukpilot_token");
       const res = await fetch(`${BASE}/api/agent/chat/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ message: msg, history }),
       });
 

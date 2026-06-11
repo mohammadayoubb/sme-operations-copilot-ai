@@ -78,6 +78,26 @@ Respond with ONLY valid JSON: {{"explanations": ["sentence 1", "sentence 2", ...
 One explanation per anomaly, in the same order.
 """
 
+PRICING_STRATEGY_PROMPT = """\
+You are a pricing strategist for a Lebanese small business. Based ONLY on the data below, give a 3-part pricing recommendation. Do not invent numbers.
+
+Product: {product_name}
+Current selling price: ${sell}
+Current gross margin: {margin_pct}%
+Total cost per unit: ${total_cost}  (base cost ${cost} + delivery ${delivery} + packaging ${packaging})
+
+Pricing scenarios (calculated):
+{scenarios_table}
+
+Sales velocity: {velocity} mover ({avg_daily} units/day average, last 30 days)
+{cost_trend_line}
+
+Respond with ONLY valid JSON:
+{{"assessment": "1-2 sentences on how healthy the current pricing is.",
+  "recommendation": "1-2 sentences: name a specific price and explain why.",
+  "risk": "1 sentence on the main pricing risk to watch."}}
+"""
+
 VOICE_COMMAND_PROMPT = """\
 You are a voice command interpreter for a Lebanese small business. The owner just spoke a command.
 Extract the intent and parameters as valid JSON only.

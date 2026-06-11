@@ -19,6 +19,8 @@ def create_order(
     delivery_area: Optional[str],
     payment_method: Optional[str],
     status: str = "pending",
+    confidence_score: float = 1.0,
+    review_status: str = "auto_approved",
 ) -> Order:
     order = Order(
         business_id=business_id,
@@ -28,6 +30,8 @@ def create_order(
         delivery_area=delivery_area,
         payment_method=payment_method,
         status=status,
+        confidence_score=confidence_score,
+        review_status=review_status,
     )
     db.add(order)
     db.flush()
@@ -64,6 +68,17 @@ def get(db: Session, order_id: int) -> Optional[Order]:
 
 def list_orders(db: Session, business_id: Optional[int] = None) -> list[Order]:
     stmt = select(Order).order_by(Order.created_at.desc(), Order.id.desc())
+    if business_id is not None:
+        stmt = stmt.where(Order.business_id == business_id)
+    return list(db.execute(stmt).scalars().all())
+
+
+def list_review_queue(db: Session, business_id: Optional[int] = None) -> list[Order]:
+    stmt = (
+        select(Order)
+        .where(Order.review_status == "needs_review")
+        .order_by(Order.confidence_score.asc(), Order.created_at.desc())
+    )
     if business_id is not None:
         stmt = stmt.where(Order.business_id == business_id)
     return list(db.execute(stmt).scalars().all())
