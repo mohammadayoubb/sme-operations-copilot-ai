@@ -120,6 +120,16 @@ adminHttp.interceptors.request.use((config) => {
   return config;
 });
 
+export interface TenantStats {
+  orders: { total: number; by_status: Record<string, number>; last_at: string | null };
+  invoices: { total: number; by_status: Record<string, number>; last_at: string | null };
+  products: { total: number; low_stock: number };
+  revenue_total: number;
+  ai: { insights_generated: number; documents_indexed: number };
+  users: { total: number; by_role: Record<string, number> };
+  last_activity_at: string | null;
+}
+
 export interface TenantInfo {
   id: number;
   name: string;
@@ -141,6 +151,8 @@ export const adminApi = {
     adminHttp.post<{ id: number; name: string; owner_username: string }>("/api/admin/tenants", data),
   deleteTenant: (businessId: number) =>
     adminHttp.delete(`/api/admin/tenants/${businessId}`),
+  tenantStats: (businessId: number) =>
+    adminHttp.get<TenantStats>(`/api/admin/tenants/${businessId}/stats`),
 };
 
 export const voiceApi = {

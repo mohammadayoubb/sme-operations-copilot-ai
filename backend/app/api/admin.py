@@ -53,6 +53,15 @@ def create_tenant(
     return admin_service.create_tenant(db, payload.business_name, payload.username, payload.password)
 
 
+@router.get("/tenants/{business_id}/stats")
+def get_tenant_stats(
+    business_id: int,
+    db: Session = Depends(get_db),
+    _: CurrentUser = Depends(get_current_superadmin),
+):
+    return admin_service.get_tenant_stats(db, business_id)
+
+
 @router.delete("/tenants/{business_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_tenant(
     business_id: int,
