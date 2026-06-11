@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.repositories import invoice_repo, product_repo
+from app.core.deps import CurrentUser, get_current_user
+from app.repositories import invoice_repo
 from app.schemas.invoice import (
     InvoiceDetailOut,
     InvoiceItemOut,
@@ -21,7 +22,11 @@ _ALLOWED_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".webp", ".pdf"}
 
 
 @router.post("/upload", response_model=InvoiceUploadResponse, status_code=202)
-async def upload_invoice(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_invoice(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in _ALLOWED_EXTS:
         raise HTTPException(400, f"Unsupported file type '{ext}'. Allowed: {sorted(_ALLOWED_EXTS)}")
@@ -37,11 +42,9 @@ async def upload_invoice(file: UploadFile = File(...), db: Session = Depends(get
     with open(file_path, "wb") as fh:
         fh.write(data)
 
-    business = product_repo.get_or_create_default_business(db)
-    invoice = invoice_repo.create_pending_invoice(db, business.id, file_path)
+    invoice = invoice_repo.create_pending_invoice(db, current_user.business_id, file_path)
     db.commit()
 
-    # Enqueue heavy OCR + extraction work
     from app.workers.invoice_tasks import process_invoice
     process_invoice.delay(invoice.id)
 
@@ -49,14 +52,21 @@ async def upload_invoice(file: UploadFile = File(...), db: Session = Depends(get
 
 
 @router.get("/", response_model=list[InvoiceListItem])
-def list_invoices(db: Session = Depends(get_db)):
-    return invoice_repo.list_invoices(db)
+def list_invoices(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    return invoice_repo.list_invoices(db, current_user.business_id)
 
 
 @router.get("/{invoice_id}", response_model=InvoiceDetailOut)
-def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
+def get_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     invoice = invoice_repo.get(db, invoice_id)
-    if invoice is None:
+    if invoice is None or invoice.business_id != current_user.business_id:
         raise HTTPException(404, "Invoice not found")
     items = invoice_repo.get_items(db, invoice_id)
     detail = InvoiceDetailOut.model_validate(invoice)
@@ -65,8 +75,12 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{invoice_id}/status", response_model=InvoiceStatusResponse)
-def get_invoice_status(invoice_id: int, db: Session = Depends(get_db)):
+def get_invoice_status(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
     invoice = invoice_repo.get(db, invoice_id)
-    if invoice is None:
+    if invoice is None or invoice.business_id != current_user.business_id:
         raise HTTPException(404, "Invoice not found")
     return InvoiceStatusResponse(invoice_id=invoice.id, status=invoice.status)

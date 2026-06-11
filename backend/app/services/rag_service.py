@@ -103,25 +103,22 @@ def _collect_documents(db: Session, business_id: int) -> list[tuple[str, int, st
 
 # ── Public service API ───────────────────────────────────────────────
 
-def index_all(db: Session, business_id: Optional[int] = None) -> dict:
+def index_all(db: Session, business_id: int) -> dict:
     """(Re)build the document table + vector index from current business data.
 
     Uses parent-child chunking: full document text stored in the `documents` DB
     table (parent), small 400-char chunks embedded in the vector store (children).
     """
-    business = product_repo.get_or_create_default_business(db)
-    bid = business_id or business.id
-
     # Clean slate so re-indexing never leaves stale rows/vectors.
-    db.query(Document).filter(Document.business_id == bid).delete(synchronize_session=False)
-    vector_store.reset_collection()
+    db.query(Document).filter(Document.business_id == business_id).delete(synchronize_session=False)
+    vector_store.reset_collection(business_id)
 
-    collected = _collect_documents(db, bid)
+    collected = _collect_documents(db, business_id)
 
     ids, texts, metadatas = [], [], []
     for source_type, source_id, content in collected:
         # Parent stored in DB for full-text lookup during Q&A.
-        doc = Document(business_id=bid, source_type=source_type, source_id=source_id, content=content)
+        doc = Document(business_id=business_id, source_type=source_type, source_id=source_id, content=content)
         db.add(doc)
         db.flush()
 
@@ -138,14 +135,14 @@ def index_all(db: Session, business_id: Optional[int] = None) -> dict:
 
     if texts:
         vectors = embeddings.embed_texts(texts)
-        vector_store.upsert(ids, vectors, texts, metadatas)
+        vector_store.upsert(ids, vectors, texts, metadatas, business_id=business_id)
 
     db.commit()
-    logger.info("rag_indexed", documents=len(collected), chunks=len(texts))
+    logger.info("rag_indexed", business_id=business_id, documents=len(collected), chunks=len(texts))
     return {"status": "indexed", "documents_indexed": len(collected), "chunks_indexed": len(texts)}
 
 
-def ask_stream(db: Session, question: str, top_k: int = 5):
+def ask_stream(db: Session, question: str, business_id: int = 1, top_k: int = 5):
     """Streaming version of ask(). Yields SSE-formatted strings.
 
     SSE event types:
@@ -167,7 +164,7 @@ def ask_stream(db: Session, question: str, top_k: int = 5):
         yield f'data: {_json.dumps({"type": "error", "error": reason or "Question rejected by guardrails."})}\n\n'
         return
 
-    hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k)
+    hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k, business_id=business_id)
 
     if not hits:
         yield f'data: {_json.dumps({"type": "no_data", "answer": rag.NO_DATA_ANSWER})}\n\n'
@@ -224,7 +221,7 @@ def ask_stream(db: Session, question: str, top_k: int = 5):
     logger.info("qa_answered_stream", grounded=True, sources=len(sources), chars=len(full))
 
 
-def ask(db: Session, question: str, top_k: int = 5) -> dict:
+def ask(db: Session, question: str, business_id: int = 1, top_k: int = 5) -> dict:
     """Guardrail → hybrid retrieval → parent lookup → grounded generation."""
     question = (question or "").strip()
     if not question:
@@ -236,7 +233,7 @@ def ask(db: Session, question: str, top_k: int = 5) -> dict:
         raise GuardrailError(reason or "Question rejected by guardrails.")
 
     # Hybrid retrieval: vector search × 3 candidates → BM25 rerank via RRF.
-    hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k)
+    hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k, business_id=business_id)
 
     if not hits:
         return {

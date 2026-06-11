@@ -4,6 +4,43 @@ const BASE = import.meta.env.VITE_API_URL ?? "";
 
 const http = axios.create({ baseURL: BASE });
 
+// Attach stored JWT to every request
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem("soukpilot_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// On 401, clear token and redirect to login (skip for the login endpoint itself)
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (
+      err.response?.status === 401 &&
+      !err.config?.url?.includes("/api/auth/login")
+    ) {
+      localStorage.removeItem("soukpilot_token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+export const authApi = {
+  login: (username: string, password: string) =>
+    http.post<{ access_token: string; token_type: string; username: string; business_id: number }>(
+      "/api/auth/login",
+      { username, password }
+    ),
+  register: (businessName: string, username: string, password: string) =>
+    http.post<{ access_token: string; token_type: string; username: string; business_id: number }>(
+      "/api/auth/register",
+      { business_name: businessName, username, password }
+    ),
+};
+
 export const invoicesApi = {
   upload: (file: File) => {
     const fd = new FormData();
@@ -19,6 +56,9 @@ export const ordersApi = {
   extract: (message: string, source = "whatsapp") =>
     http.post("/api/orders/extract", { message, source }),
   list: () => http.get("/api/orders/"),
+  reviewQueue: () => http.get("/api/orders/review-queue"),
+  approve: (id: number) => http.post(`/api/orders/${id}/approve`),
+  reject: (id: number) => http.post(`/api/orders/${id}/reject`),
   updateStatus: (id: number, status: string) =>
     http.patch(`/api/orders/${id}/status`, { status }),
 };
@@ -31,8 +71,11 @@ export const productsApi = {
 };
 
 export const pricingApi = {
-  analyze: (data: { cost: number; sell: number; delivery: number; packaging: number }) =>
-    http.post("/api/pricing/analyze", data),
+  products: () => http.get("/api/pricing/products"),
+  analyze: (data: {
+    cost: number; sell: number; delivery: number; packaging: number;
+    product_id?: number | null; product_name?: string | null;
+  }) => http.post("/api/pricing/analyze", data),
   history: (productId: number) => http.get(`/api/pricing/history/${productId}`),
 };
 
@@ -61,6 +104,11 @@ export const agentApi = {
 
 export const anomalyApi = {
   alerts: () => http.get("/api/anomaly/alerts"),
+};
+
+export const driftApi = {
+  latest: () => http.get("/api/drift/latest"),
+  run: () => http.post("/api/drift/run"),
 };
 
 export const voiceApi = {

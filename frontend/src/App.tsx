@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, NavLink, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import InvoiceUpload from "./pages/InvoiceUpload";
 import Orders from "./pages/Orders";
@@ -145,6 +147,50 @@ function useClock() {
   return now;
 }
 
+type SystemStatus = "live" | "degraded" | "offline";
+
+
+const STATUS_CYCLE: SystemStatus[] = ["live", "degraded", "offline"];
+
+function useSystemStatus(): [SystemStatus, () => void] {
+  const [override, setOverride] = useState<SystemStatus | null>(null);
+  const [real, setReal] = useState<SystemStatus>("live");
+
+  useEffect(() => {
+    const BASE = (import.meta.env.VITE_API_URL as string) ?? "";
+
+    async function check() {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      try {
+        const res = await fetch(`${BASE}/health`, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) { setReal("offline"); return; }
+        const data = await res.json();
+        setReal(data.database === "connected" ? "live" : "degraded");
+      } catch {
+        clearTimeout(timer);
+        setReal("offline");
+      }
+    }
+
+    check();
+    const id = setInterval(check, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  function cycle() {
+    setOverride((prev) => {
+      const current = prev ?? real;
+      const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(current) + 1) % STATUS_CYCLE.length];
+      // If we've cycled back to what the real status is, clear the override
+      return next === real ? null : next;
+    });
+  }
+
+  return [override ?? real, cycle];
+}
+
 function useBreadcrumb(pathname: string) {
   for (const g of NAV_GROUPS) {
     for (const item of g.items) {
@@ -155,13 +201,22 @@ function useBreadcrumb(pathname: string) {
   return { group: null, page: "—" };
 }
 
+const STATUS_CONFIG: Record<SystemStatus, { label: string; color: string; bg: string; border: string }> = {
+  live:     { label: "Live",     color: "#34d399", bg: "rgba(52,211,153,0.07)",  border: "rgba(52,211,153,0.2)"  },
+  degraded: { label: "Degraded", color: "#fb923c", bg: "rgba(251,146,60,0.07)",  border: "rgba(251,146,60,0.2)"  },
+  offline:  { label: "Offline",  color: "#f87171", bg: "rgba(248,113,113,0.07)", border: "rgba(248,113,113,0.2)" },
+};
+
 function Topbar() {
   const location = useLocation();
   const now = useClock();
+  const [systemStatus, cycleStatus] = useSystemStatus();
   const { group, page } = useBreadcrumb(location.pathname);
 
   const time = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
   const date = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+  const sc = STATUS_CONFIG[systemStatus];
 
   return (
     <header style={S.topbar}>
@@ -177,12 +232,59 @@ function Topbar() {
       <div style={S.topbarRight}>
         <span style={S.topbarDate}>{date}</span>
         <span style={S.topbarTime}>{time}</span>
-        <div style={S.liveChip}>
-          <span style={S.liveDot} />
-          <span style={S.liveLabel}>Live</span>
+        <div
+          onClick={cycleStatus}
+          title="Click to demo system states"
+          style={{ ...S.liveChip, background: sc.bg, border: `1px solid ${sc.border}`, cursor: "pointer" }}
+        >
+          <span style={{
+            ...S.liveDot,
+            background: sc.color,
+            animation: systemStatus === "live" ? "live-pulse 2.5s ease-in-out infinite" : "none",
+          }} />
+          <span style={{ ...S.liveLabel, color: sc.color }}>{sc.label}</span>
         </div>
       </div>
     </header>
+  );
+}
+
+// ── Logout button ────────────────────────────────────────────────────────────
+
+function LogoutButton() {
+  const navigate = useNavigate();
+  function logout() {
+    localStorage.removeItem("soukpilot_token");
+    localStorage.removeItem("soukpilot_username");
+    localStorage.removeItem("soukpilot_business");
+    navigate("/login", { replace: true });
+  }
+  return (
+    <button onClick={logout} title="Sign out" style={S.logoutBtn}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" />
+        <path d="M11 11l3-3-3-3" />
+        <line x1="14" y1="8" x2="6" y2="8" />
+      </svg>
+    </button>
+  );
+}
+
+function SidebarFooter() {
+  const business = localStorage.getItem("soukpilot_business");
+  const username = localStorage.getItem("soukpilot_username");
+  const label = business || username || "My Business";
+  return (
+    <div style={S.sidebarFooter}>
+      <span style={S.footerDot} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", marginTop: 1 }}>v0.1.0</div>
+      </div>
+      <LogoutButton />
+    </div>
   );
 }
 
@@ -229,10 +331,7 @@ function MainLayout() {
           ))}
         </ul>
 
-        <div style={S.sidebarFooter}>
-          <span style={S.footerDot} />
-          <span>System live · v0.1.0</span>
-        </div>
+        <SidebarFooter />
       </nav>
 
       <div style={S.contentWrapper}>
@@ -256,16 +355,26 @@ function MainLayout() {
   );
 }
 
+// ── Auth guard ───────────────────────────────────────────────────────────────
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("soukpilot_token");
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Widget runs standalone — no sidebar/topbar */}
-        <Route path="/widget" element={<WidgetChat />} />
-        {/* Everything else gets the full shell */}
-        <Route path="/*" element={<MainLayout />} />
+        {/* Public standalone routes */}
+        <Route path="/login"    element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/widget"   element={<WidgetChat />} />
+        {/* Everything else requires auth and gets the full shell */}
+        <Route path="/*" element={<RequireAuth><MainLayout /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
   );
@@ -414,6 +523,19 @@ const S: Record<string, React.CSSProperties> = {
     background: "#34d399",
     flexShrink: 0,
     display: "inline-block",
+  },
+  logoutBtn: {
+    background: "transparent",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 6,
+    color: "rgba(255,255,255,0.35)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px 6px",
+    flexShrink: 0,
+    transition: "color 0.15s, border-color 0.15s",
   },
 
   // Topbar

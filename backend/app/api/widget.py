@@ -7,14 +7,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import CurrentUser, get_current_user
 from app.models.widget_token import WidgetToken
-from app.repositories import product_repo
 from app.services import agent_service
 
 router = APIRouter(prefix="/api/widget", tags=["Widget"])
 
-
-# ── Schemas ──────────────────────────────────────────────────────────────────
 
 class TokenCreateRequest(BaseModel):
     label: str = "My Widget"
@@ -26,8 +24,6 @@ class WidgetChatRequest(BaseModel):
     history: list[dict] = []
 
 
-# ── Token helpers ─────────────────────────────────────────────────────────────
-
 def _resolve_token(token: str, db: Session) -> WidgetToken:
     wt = db.query(WidgetToken).filter(WidgetToken.token == token).first()
     if not wt:
@@ -35,14 +31,13 @@ def _resolve_token(token: str, db: Session) -> WidgetToken:
     return wt
 
 
-# ── Token management endpoints ────────────────────────────────────────────────
-
 @router.post("/tokens")
-def create_token(body: TokenCreateRequest, db: Session = Depends(get_db)):
-    """Generate a new embed token for the default business."""
-    business = product_repo.get_or_create_default_business(db)
-    db.flush()
-    wt = WidgetToken(token=str(uuid.uuid4()), business_id=business.id, label=body.label)
+def create_token(
+    body: TokenCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    wt = WidgetToken(token=str(uuid.uuid4()), business_id=current_user.business_id, label=body.label)
     db.add(wt)
     db.commit()
     db.refresh(wt)
@@ -50,11 +45,11 @@ def create_token(body: TokenCreateRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/tokens")
-def list_tokens(db: Session = Depends(get_db)):
-    """List all embed tokens for the default business."""
-    business = product_repo.get_or_create_default_business(db)
-    db.flush()
-    tokens = db.query(WidgetToken).filter(WidgetToken.business_id == business.id).all()
+def list_tokens(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    tokens = db.query(WidgetToken).filter(WidgetToken.business_id == current_user.business_id).all()
     return [
         {"token": wt.token, "label": wt.label, "business_id": wt.business_id, "created_at": str(wt.created_at)}
         for wt in tokens
@@ -62,8 +57,15 @@ def list_tokens(db: Session = Depends(get_db)):
 
 
 @router.delete("/tokens/{token}")
-def delete_token(token: str, db: Session = Depends(get_db)):
-    wt = db.query(WidgetToken).filter(WidgetToken.token == token).first()
+def delete_token(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    wt = db.query(WidgetToken).filter(
+        WidgetToken.token == token,
+        WidgetToken.business_id == current_user.business_id,
+    ).first()
     if not wt:
         raise HTTPException(404, "Token not found")
     db.delete(wt)
@@ -71,11 +73,9 @@ def delete_token(token: str, db: Session = Depends(get_db)):
     return {"deleted": True}
 
 
-# ── Widget chat stream ────────────────────────────────────────────────────────
-
 @router.post("/chat/stream")
 def widget_chat_stream(body: WidgetChatRequest, db: Session = Depends(get_db)):
-    """Streaming agent endpoint authenticated via widget token."""
+    """Streaming agent endpoint authenticated via widget token (no JWT needed)."""
     wt = _resolve_token(body.token, db)
     gen = agent_service.chat_stream(
         db,
