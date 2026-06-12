@@ -103,6 +103,31 @@ def _collect_documents(db: Session, business_id: int) -> list[tuple[str, int, st
 
 # ── Public service API ───────────────────────────────────────────────
 
+def ensure_indexed(db: Session, business_id: int) -> None:
+    """Self-heal: if the vector index is empty for this business but the DB has
+    data to index, build it on demand.
+
+    The vector store is a local file. After a redeploy on a host without a
+    persistent volume, that file is gone even though the SQL data remains — so a
+    cold container would answer every question with "no data" until someone
+    clicks Reindex. This makes the first question after a deploy rebuild the
+    index automatically. Safe to call on every ask: it's a no-op once the index
+    is warm (count > 0) or when there's genuinely nothing to index.
+    """
+    try:
+        if vector_store.count(business_id) > 0:
+            return
+        collected = _collect_documents(db, business_id)
+        if not collected:
+            return  # nothing to index — genuine empty business
+        logger.info("rag_autoindex_triggered", business_id=business_id)
+        index_all(db, business_id)
+    except Exception as exc:  # noqa: BLE001
+        # Never let auto-indexing break a question; fall through to normal
+        # retrieval (which will simply return no_data if still empty).
+        logger.error("rag_autoindex_failed", business_id=business_id, err=str(exc))
+
+
 def index_all(db: Session, business_id: int) -> dict:
     """(Re)build the document table + vector index from current business data.
 
@@ -163,6 +188,9 @@ def ask_stream(db: Session, question: str, business_id: int = 1, top_k: int = 5)
         logger.warning("qa_question_blocked", reason=reason)
         yield f'data: {_json.dumps({"type": "error", "error": reason or "Question rejected by guardrails."})}\n\n'
         return
+
+    # Self-heal an empty/cold index (e.g. after a redeploy) before retrieving.
+    ensure_indexed(db, business_id)
 
     hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k, business_id=business_id)
 
@@ -231,6 +259,9 @@ def ask(db: Session, question: str, business_id: int = 1, top_k: int = 5) -> dic
     if not safe:
         logger.warning("qa_question_blocked", reason=reason)
         raise GuardrailError(reason or "Question rejected by guardrails.")
+
+    # Self-heal an empty/cold index (e.g. after a redeploy) before retrieving.
+    ensure_indexed(db, business_id)
 
     # Hybrid retrieval: vector search × 3 candidates → BM25 rerank via RRF.
     hits, retrieval_stats = rag.retrieve_reranked(question, top_k=top_k, business_id=business_id)
