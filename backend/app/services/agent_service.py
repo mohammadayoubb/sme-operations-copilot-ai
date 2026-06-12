@@ -304,21 +304,28 @@ def _create_order(db: Session, message: str) -> dict:
 
 def _execute_tool(db: Session, business_id: int, name: str, args: dict) -> Any:
     logger.info("agent_tool_call", tool=name, args=list(args.keys()))
-    if name == "check_stock":
-        return _check_stock(db, business_id)
-    if name == "get_reorder_alerts":
-        return _get_reorder_alerts(db, business_id)
-    if name == "get_sales_summary":
-        return _get_sales_summary(db, business_id)
-    if name == "get_latest_report":
-        return _get_latest_report(db, business_id)
-    if name == "list_recent_orders":
-        return _list_recent_orders(db, business_id, limit=args.get("limit", 5))
-    if name == "get_price_history":
-        return _get_price_history(db, business_id, args.get("product_name", ""))
-    if name == "create_order":
-        return _create_order(db, args.get("message", ""))
-    return {"error": f"Unknown tool: {name}"}
+    try:
+        if name == "check_stock":
+            return _check_stock(db, business_id)
+        if name == "get_reorder_alerts":
+            return _get_reorder_alerts(db, business_id)
+        if name == "get_sales_summary":
+            return _get_sales_summary(db, business_id)
+        if name == "get_latest_report":
+            return _get_latest_report(db, business_id)
+        if name == "list_recent_orders":
+            return _list_recent_orders(db, business_id, limit=args.get("limit", 5))
+        if name == "get_price_history":
+            return _get_price_history(db, business_id, args.get("product_name", ""))
+        if name == "create_order":
+            return _create_order(db, args.get("message", ""))
+        return {"error": f"Unknown tool: {name}"}
+    except Exception as exc:  # noqa: BLE001
+        # A single tool failure must never kill the whole agent turn — return the
+        # error to the LLM so it can recover or explain, instead of crashing the stream.
+        db.rollback()
+        logger.error("agent_tool_failed", tool=name, err=str(exc))
+        return {"error": f"Tool '{name}' failed: {exc}"}
 
 
 # ── Agent loop ──────────────────────────────────────────────────────────────

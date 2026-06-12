@@ -328,7 +328,7 @@ def main() -> None:
         # 9. RAG reindex
         try:
             from app.services import rag_service
-            idx = rag_service.index_all(db)
+            idx = rag_service.index_all(db, bid)
             db.commit()
             print(f"      RAG reindexed: {idx['documents_indexed']} docs, {idx['chunks_indexed']} chunks")
         except Exception as e:
