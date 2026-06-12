@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import PageShell from "../components/PageShell";
 import { voiceApi } from "../services/api";
 
-const BASE = (import.meta.env.VITE_API_URL as string) ?? "";
+const BASE = ((import.meta.env.VITE_API_URL as string) ?? "").replace(/\/+$/, "");
 
 type Phase = "idle" | "recording" | "transcribing" | "thinking" | "speaking";
 

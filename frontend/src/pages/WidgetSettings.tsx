@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
 
-const BASE = (import.meta.env.VITE_API_URL as string) ?? "";
+const BASE = ((import.meta.env.VITE_API_URL as string) ?? "").replace(/\/+$/, "");
 const FRONTEND_ORIGIN = window.location.origin;
 
 interface WidgetToken {

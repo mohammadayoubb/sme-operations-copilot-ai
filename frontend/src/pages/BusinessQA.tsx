@@ -2,7 +2,7 @@ import { useState } from "react";
 import PageShell from "../components/PageShell";
 import { qaApi } from "../services/api";
 
-const BASE = (import.meta.env.VITE_API_URL as string) ?? "";
+const BASE = ((import.meta.env.VITE_API_URL as string) ?? "").replace(/\/+$/, "");
 
 const EXAMPLE_QUESTIONS = [
   "Which supplier increased prices the most this month?",

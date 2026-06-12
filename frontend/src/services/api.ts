@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_URL ?? "";
+// Strip any trailing slash so `${BASE}/api/...` can never become `//api/...`
+// (a double slash 404s on the backend).
+const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 
 const http = axios.create({ baseURL: BASE });
 

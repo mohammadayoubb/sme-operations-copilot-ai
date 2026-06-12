@@ -177,7 +177,7 @@ function useSystemStatus(): [SystemStatus, () => void] {
   const [real, setReal] = useState<SystemStatus>("live");
 
   useEffect(() => {
-    const BASE = (import.meta.env.VITE_API_URL as string) ?? "";
+    const BASE = ((import.meta.env.VITE_API_URL as string) ?? "").replace(/\/+$/, "");
 
     async function check() {
       const controller = new AbortController();
