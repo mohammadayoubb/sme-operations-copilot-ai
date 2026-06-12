@@ -299,15 +299,15 @@ const S: Record<string, React.CSSProperties> = {
     borderRadius: "var(--radius)", padding: "20px 24px", marginBottom: 28,
   },
   cardTitle: { fontWeight: 600, fontSize: 14, marginBottom: 14 },
-  row: { display: "flex", gap: 10, alignItems: "center" },
+  row: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" } as React.CSSProperties,
   input: {
-    flex: 1, background: "var(--surface2)", border: "1px solid var(--border)",
+    flex: 1, minWidth: 0, background: "var(--surface2)", border: "1px solid var(--border)",
     borderRadius: 6, padding: "10px 14px", color: "var(--text)", fontSize: 14,
   },
   btn: {
     background: "var(--accent)", color: "#fff", border: "none",
     borderRadius: 6, padding: "10px 22px", fontWeight: 600, fontSize: 14,
-    whiteSpace: "nowrap",
+    whiteSpace: "nowrap", flexShrink: 0,
   } as React.CSSProperties,
   error: { color: "var(--danger)", fontSize: 12, marginTop: 8 },
   section: { marginBottom: 28 },
