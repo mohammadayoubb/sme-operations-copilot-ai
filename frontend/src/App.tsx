@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -137,6 +137,25 @@ const NAV_GROUPS = [
   },
 ];
 
+// ── Mobile nav ───────────────────────────────────────────────────────────────
+
+const MobileNavCtx = createContext<{
+  isMobile: boolean;
+  open: boolean;
+  toggle: () => void;
+  close: () => void;
+}>({ isMobile: false, open: false, toggle: () => {}, close: () => {} });
+
+function useIsMobile() {
+  const [v, setV] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const fn = () => setV(window.innerWidth < 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return v;
+}
+
 // ── Topbar ───────────────────────────────────────────────────────────────────
 
 function useClock() {
@@ -213,6 +232,7 @@ function Topbar() {
   const now = useClock();
   const [systemStatus, cycleStatus] = useSystemStatus();
   const { group, page } = useBreadcrumb(location.pathname);
+  const { isMobile, toggle } = useContext(MobileNavCtx);
 
   const time = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
   const date = now.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -220,8 +240,17 @@ function Topbar() {
   const sc = STATUS_CONFIG[systemStatus];
 
   return (
-    <header style={S.topbar}>
-      <div style={S.topbarLeft}>
+    <header style={{ ...S.topbar, padding: isMobile ? "0 16px" : "0 36px" }}>
+      <div style={{ ...S.topbarLeft, gap: isMobile ? 10 : 0 }}>
+        {isMobile && (
+          <button onClick={toggle} style={S.hamburgerBtn} aria-label="Open menu">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <line x1="2" y1="4.5" x2="16" y2="4.5" />
+              <line x1="2" y1="9" x2="16" y2="9" />
+              <line x1="2" y1="13.5" x2="16" y2="13.5" />
+            </svg>
+          </button>
+        )}
         {group && (
           <>
             <span style={S.crumbGroup}>{group}</span>
@@ -231,7 +260,7 @@ function Topbar() {
         <span style={S.crumbPage}>{page}</span>
       </div>
       <div style={S.topbarRight}>
-        <span style={S.topbarDate}>{date}</span>
+        {!isMobile && <span style={S.topbarDate}>{date}</span>}
         <span style={S.topbarTime}>{time}</span>
         <div
           onClick={cycleStatus}
@@ -243,7 +272,7 @@ function Topbar() {
             background: sc.color,
             animation: systemStatus === "live" ? "live-pulse 2.5s ease-in-out infinite" : "none",
           }} />
-          <span style={{ ...S.liveLabel, color: sc.color }}>{sc.label}</span>
+          {!isMobile && <span style={{ ...S.liveLabel, color: sc.color }}>{sc.label}</span>}
         </div>
       </div>
     </header>
@@ -292,13 +321,43 @@ function SidebarFooter() {
 // ── Shell layout (sidebar + topbar + main) ──────────────────────────────────
 
 function MainLayout() {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const toggle = () => setOpen(v => !v);
+  const close = () => setOpen(false);
+
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  const sidebarStyle: React.CSSProperties = isMobile
+    ? {
+        ...S.sidebar,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "100vh",
+        zIndex: 200,
+        transform: open ? "translateX(0)" : "translateX(-228px)",
+        transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+        boxShadow: open ? "4px 0 40px rgba(0,0,0,0.6)" : "none",
+      }
+    : S.sidebar;
+
   return (
+    <MobileNavCtx.Provider value={{ isMobile, open, toggle, close }}>
     <div style={S.shell}>
       <div style={S.blob1} aria-hidden="true" />
       <div style={S.blob2} aria-hidden="true" />
       <div style={S.blob3} aria-hidden="true" />
 
-      <nav style={S.sidebar}>
+      {isMobile && open && (
+        <div
+          onClick={close}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 199 }}
+        />
+      )}
+
+      <nav style={sidebarStyle}>
         <div style={S.logo}>
           <svg width="162" height="40" viewBox="0 0 162 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" fill="none"/>
@@ -337,7 +396,7 @@ function MainLayout() {
 
       <div style={S.contentWrapper}>
         <Topbar />
-        <main style={S.main}>
+        <main style={{ ...S.main, padding: isMobile ? "16px 14px 32px" : "28px 36px 40px" }}>
           <Routes>
             <Route path="/"               element={<Dashboard />} />
             <Route path="/invoices"       element={<InvoiceUpload />} />
@@ -353,6 +412,7 @@ function MainLayout() {
         </main>
       </div>
     </div>
+    </MobileNavCtx.Provider>
   );
 }
 
@@ -525,6 +585,18 @@ const S: Record<string, React.CSSProperties> = {
     background: "#34d399",
     flexShrink: 0,
     display: "inline-block",
+  },
+  hamburgerBtn: {
+    background: "transparent",
+    border: "none",
+    color: "rgba(255,255,255,0.55)",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "4px",
+    flexShrink: 0,
+    borderRadius: 6,
   },
   logoutBtn: {
     background: "transparent",

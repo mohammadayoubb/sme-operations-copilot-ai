@@ -114,3 +114,26 @@ table tbody tr {
 table tbody tr:hover {
   background: rgba(255, 255, 255, 0.028);
 }
+
+/* ── Mobile responsive ────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  /* Make all tables scroll horizontally instead of overflowing */
+  .table-wrap, table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  /* Stack grid layouts to single column */
+  [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reduce font size slightly on very small screens */
+  body { font-size: 13px; }
+
+  /* Prevent fixed-width inline styles from overflowing */
+  img, video { max-width: 100%; }
+}
