@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
+import SoukKeeper from "../components/SoukKeeper";
+import SoukScene from "../components/SoukScene";
 import { anomalyApi, driftApi, forecastApi, invoicesApi, ordersApi, productsApi, reportsApi } from "../services/api";
 
 interface Product { id: number; name: string; current_stock: number | null; reorder_level: number | null; }
@@ -114,8 +116,27 @@ export default function Dashboard() {
   ];
 
   return (
-    <PageShell title="Dashboard" subtitle="Your business at a glance">
+    <PageShell
+      title="Dashboard"
+      subtitle="Your business at a glance"
+      actions={
+        <SoukKeeper
+          loading={loading}
+          lowStockCount={lowStockCount}
+          pendingCount={pendingCount}
+          salesChangePct={salesData?.change_pct}
+          driftStatus={drift?.status ?? null}
+        />
+      }
+    >
       {error && <div style={styles.errorBanner}>⚠ {error}</div>}
+
+      <SoukScene
+        loading={loading}
+        lowStockCount={lowStockCount}
+        pendingCount={pendingCount}
+        salesChangePct={salesData?.change_pct}
+      />
 
       <div style={styles.grid}>
         {STAT_CARDS.map((c) => (

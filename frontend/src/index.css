@@ -105,6 +105,62 @@ input:focus, textarea:focus, select:focus {
   0%,100% { opacity: 1; }
   50%     { opacity: 0.35; }
 }
+@keyframes souk-float {
+  0%,100% { transform: translateY(0px); }
+  50%     { transform: translateY(-7px); }
+}
+@keyframes souk-celebrate {
+  0%,100% { transform: translateY(0px)   rotate(0deg)  scale(1);    }
+  20%     { transform: translateY(-14px) rotate(-6deg) scale(1.06); }
+  40%     { transform: translateY(-10px) rotate(4deg)  scale(1.04); }
+  60%     { transform: translateY(-14px) rotate(-4deg) scale(1.06); }
+  80%     { transform: translateY(-8px)  rotate(3deg)  scale(1.02); }
+}
+@keyframes souk-shake {
+  0%,100%     { transform: translateX(0); }
+  15%,45%,75% { transform: translateX(-4px); }
+  30%,60%,90% { transform: translateX(4px); }
+}
+@keyframes souk-alert-pulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.05); }
+}
+@keyframes souk-star-blink {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.25; }
+}
+@keyframes souk-bubble-in {
+  from { opacity: 0; transform: scale(0.85) translateX(8px); }
+  to   { opacity: 1; transform: scale(1)    translateX(0);   }
+}
+
+.souk-float       { animation: souk-float       3s   ease-in-out infinite; }
+.souk-celebrate   { animation: souk-celebrate   1.2s ease-in-out infinite; }
+.souk-shake       { animation: souk-shake       2.5s ease-in-out infinite; }
+.souk-alert-pulse { animation: souk-alert-pulse 1.4s ease-in-out infinite; }
+.souk-star        { animation: souk-star-blink  1.8s ease-in-out infinite; }
+.souk-star-alt    { animation: souk-star-blink  1.4s ease-in-out infinite 0.5s; }
+.souk-bubble      { animation: souk-bubble-in   0.35s ease; }
+
+@media (max-width: 640px) {
+  .souk-bubble { display: none; }
+}
+
+/* ── Souk Scene animations ───────────────────────────────── */
+@keyframes souk-walk-right {
+  from { transform: translateX(-80px); }
+  to   { transform: translateX(820px); }
+}
+@keyframes souk-walk-left {
+  from { transform: translateX(820px); }
+  to   { transform: translateX(-80px); }
+}
+@keyframes souk-stall-breathe {
+  0%,100% { opacity: 0.07; }
+  50%     { opacity: 0.14; }
+}
+.souk-stall-glow { animation: souk-stall-breathe 3s ease-in-out infinite; }
+.souk-alert-dot  { animation: live-pulse 1.5s ease-in-out infinite; }
 
 /* ── Table hover ──────────────────────────────────────────── */
 
