@@ -14,6 +14,7 @@ import VoiceAssistant from "./pages/VoiceAssistant";
 import AgentChat from "./pages/AgentChat";
 import WidgetChat from "./pages/WidgetChat";
 import WidgetSettings from "./pages/WidgetSettings";
+import SoukRunner from "./pages/SoukRunner";
 
 // ── SVG icon helper ──────────────────────────────────────────────────────────
 
@@ -408,6 +409,7 @@ function MainLayout() {
             <Route path="/voice"          element={<VoiceAssistant />} />
             <Route path="/agent"          element={<AgentChat />} />
             <Route path="/widget-settings" element={<WidgetSettings />} />
+            <Route path="/game"            element={<SoukRunner />} />
           </Routes>
         </main>
       </div>

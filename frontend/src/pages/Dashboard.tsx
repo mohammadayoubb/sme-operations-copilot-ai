@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import SoukKeeper from "../components/SoukKeeper";
 import SoukScene from "../components/SoukScene";
@@ -120,13 +121,42 @@ export default function Dashboard() {
       title="Dashboard"
       subtitle="Your business at a glance"
       actions={
-        <SoukKeeper
-          loading={loading}
-          lowStockCount={lowStockCount}
-          pendingCount={pendingCount}
-          salesChangePct={salesData?.change_pct}
-          driftStatus={drift?.status ?? null}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link
+            to="/game"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 13px",
+              background: "rgba(129,140,248,0.1)",
+              border: "1px solid rgba(129,140,248,0.25)",
+              borderRadius: 8,
+              color: "rgba(129,140,248,0.85)",
+              fontSize: 12,
+              fontWeight: 600,
+              textDecoration: "none",
+              flexShrink: 0,
+              transition: "background 0.15s, border-color 0.15s",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="14" height="9" rx="2.5" />
+              <line x1="5" y1="8" x2="7" y2="8" />
+              <line x1="6" y1="7" x2="6" y2="9" />
+              <circle cx="10.5" cy="7.5" r=".6" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="8.8" r=".6" fill="currentColor" stroke="none" />
+            </svg>
+            Play
+          </Link>
+          <SoukKeeper
+            loading={loading}
+            lowStockCount={lowStockCount}
+            pendingCount={pendingCount}
+            salesChangePct={salesData?.change_pct}
+            driftStatus={drift?.status ?? null}
+          />
+        </div>
       }
     >
       {error && <div style={styles.errorBanner}>⚠ {error}</div>}
