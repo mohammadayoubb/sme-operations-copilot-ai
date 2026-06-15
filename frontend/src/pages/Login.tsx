@@ -40,7 +40,7 @@ export default function Login() {
         {/* Logo */}
         <div style={S.logoRow}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <LogoIcon size={42} color="#818cf8" />
+            <LogoIcon size={42} />
             <span style={{ fontWeight: 800, fontSize: 22, color: "rgba(255,255,255,0.92)", letterSpacing: "0.3px" }}>
               SoukPilot <span style={{ color: "#818cf8" }}>AI</span>
             </span>
