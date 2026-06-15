@@ -10,6 +10,7 @@
  * (standalone preview) without needing any parent cooperation.
  */
 import { useEffect, useRef, useState } from "react";
+import LogoIcon from "../components/LogoIcon";
 
 const BASE = ((import.meta.env.VITE_API_URL as string) ?? "").replace(/\/+$/, "");
 
@@ -196,7 +197,7 @@ export default function WidgetChat() {
           onClick={() => setOpen(true)}
           title="Open SoukPilot AI"
         >
-          <img src="/logo.png" width="36" height="36" style={{ objectFit: "contain" }} alt="SoukPilot AI" />
+          <LogoIcon size={34} color="rgba(255,255,255,0.95)" />
         </button>
       </div>
     );
@@ -210,7 +211,7 @@ export default function WidgetChat() {
       {/* Header */}
       <div style={S.header}>
         <div style={S.headerLogo}>
-          <img src="/logo.png" width="22" height="22" style={{ objectFit: "contain" }} alt="SoukPilot AI" />
+          <LogoIcon size={22} color="rgba(255,255,255,0.9)" />
           <span style={S.headerTitle}>SoukPilot AI</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

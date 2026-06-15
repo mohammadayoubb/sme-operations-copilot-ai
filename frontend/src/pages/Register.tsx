@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../services/api";
+import LogoIcon from "../components/LogoIcon";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -35,7 +36,12 @@ export default function Register() {
 
       <div style={S.card}>
         <div style={S.logoRow}>
-          <img src="/logo.png" height="40" style={{ objectFit: "contain", maxWidth: 200 }} alt="SoukPilot AI" />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LogoIcon size={42} color="#818cf8" />
+            <span style={{ fontWeight: 800, fontSize: 22, color: "rgba(255,255,255,0.92)", letterSpacing: "0.3px" }}>
+              SoukPilot <span style={{ color: "#818cf8" }}>AI</span>
+            </span>
+          </div>
         </div>
 
         <p style={S.subtitle}>Create your business account</p>

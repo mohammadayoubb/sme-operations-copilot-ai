@@ -1,5 +1,6 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import { adminApi, TenantInfo, TenantStats } from "../services/api";
+import LogoIcon from "../components/LogoIcon";
 
 // ── Login view ────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,12 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
       <div style={S.blob2} aria-hidden="true" />
       <div style={S.card}>
         <div style={S.logoRow}>
-          <img src="/logo.png" height="40" style={{ objectFit: "contain", maxWidth: 200 }} alt="SoukPilot AI" />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LogoIcon size={42} color="#818cf8" />
+            <span style={{ fontWeight: 800, fontSize: 22, color: "rgba(255,255,255,0.92)", letterSpacing: "0.3px" }}>
+              SoukPilot <span style={{ color: "#818cf8" }}>AI</span>
+            </span>
+          </div>
         </div>
         <p style={S.subtitle}>Super Admin Portal</p>
         <form onSubmit={handleSubmit} style={S.form}>

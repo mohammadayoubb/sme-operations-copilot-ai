@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, createContext, useContext } from "react";
+import LogoIcon from "./components/LogoIcon";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -359,7 +360,10 @@ function MainLayout() {
 
       <nav style={sidebarStyle}>
         <div style={S.logo}>
-          <img src="/logo.png" height="36" style={{ objectFit: "contain", maxWidth: 160 }} alt="SoukPilot AI" />
+          <LogoIcon size={30} color="#818cf8" />
+          <span style={{ marginLeft: 10, fontWeight: 700, fontSize: 14, color: "rgba(255,255,255,0.9)", letterSpacing: "0.3px" }}>
+            SoukPilot <span style={{ color: "#818cf8" }}>AI</span>
+          </span>
         </div>
 
         <ul style={S.navList}>
