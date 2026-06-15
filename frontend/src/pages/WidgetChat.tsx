@@ -196,12 +196,7 @@ export default function WidgetChat() {
           onClick={() => setOpen(true)}
           title="Open SoukPilot AI"
         >
-          {/* SoukPilot arch logo */}
-          <svg width="28" height="28" viewBox="0 0 36 40" fill="none">
-            <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-            <path d="M9 36 L9 20 Q9 10 18 10 Q27 10 27 20 L27 36" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-            <line x1="1" y1="36" x2="35" y2="36" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
+          <img src="/logo.png" width="36" height="36" style={{ objectFit: "contain" }} alt="SoukPilot AI" />
         </button>
       </div>
     );
@@ -215,10 +210,7 @@ export default function WidgetChat() {
       {/* Header */}
       <div style={S.header}>
         <div style={S.headerLogo}>
-          <svg width="20" height="20" viewBox="0 0 36 40" fill="none">
-            <path d="M4 36 L4 19 Q4 4 18 4 Q32 4 32 19 L32 36" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-            <line x1="1" y1="36" x2="35" y2="36" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
+          <img src="/logo.png" width="22" height="22" style={{ objectFit: "contain" }} alt="SoukPilot AI" />
           <span style={S.headerTitle}>SoukPilot AI</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
