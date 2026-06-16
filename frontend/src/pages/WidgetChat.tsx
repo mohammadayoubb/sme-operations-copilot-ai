@@ -211,8 +211,7 @@ export default function WidgetChat() {
       {/* Header */}
       <div style={S.header}>
         <div style={S.headerLogo}>
-          <LogoIcon size={22} iconOnly={true} white={true} />
-          <span style={S.headerTitle}>SoukPilot AI</span>
+          <LogoIcon size={22} white={true} />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={S.liveChip}>
