@@ -34,6 +34,13 @@ def _deduct_inventory_for_order(db: Session, order: Order, extracted, business_i
     for item in extracted.items:
         product = product_repo.match_or_create_product(db, business_id, item.product)
 
+        available = float(product.current_stock or 0)
+        if available < item.quantity:
+            raise ValueError(
+                f"Insufficient stock for '{product.name}': "
+                f"{int(available)} available, {item.quantity} requested."
+            )
+
         order_repo.add_item(
             db,
             order.id,

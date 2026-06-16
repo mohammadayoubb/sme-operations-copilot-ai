@@ -31,7 +31,8 @@ prompt safety guardrails, JWT multi-tenancy, and a recruiter-ready UI.
 | 12 | **2-Tier Super-Admin System** | Standalone `/superadmin` portal — create/delete tenants, view per-tenant usage stats, role separation enforced at the dependency level |
 | 13 | **Order Review Queue** | Confidence score < 0.6 → order held for human review; approve or reject from a dedicated queue UI |
 | 14 | **WhatsApp Webhook (Twilio)** | Inbound WhatsApp messages processed automatically via Twilio webhook with HMAC-SHA1 signature validation |
-| 15 | **AI Drift Detection** | PSI (Population Stability Index) over order feature distributions; flags `warning` / `alert` when order patterns shift from baseline |
+| 15 | **ML Drift Monitor (PSI)** | Sales distribution (last 7 days) vs. 60-day rolling baseline → PSI computed with adaptive binning; Dashboard panel with one-click "Run Check" → `stable` / `warning` / `alert`; signals when the ML forecasting model may need retraining |
+| 16 | **CI Eval Gate (GitHub Actions)** | Every push runs the full pytest suite + `tests/eval_gate.py`; enforces 100% guardrail coverage, 100% extraction accuracy, 100% drift-eval pass, and ≥95% overall — blocks merges on any regression |
 
 ---
 
@@ -120,8 +121,22 @@ soukpilot-ai/
 ```bash
 cd backend
 python -m pytest tests/ -v
-# 71 passed — no OpenAI key or live DB required
+# no OpenAI key or live DB required
 ```
+
+### CI Eval Gate
+
+Every push to any branch triggers `.github/workflows/ci.yml`, which runs pytest and then `tests/eval_gate.py` against the JUnit XML report. The gate enforces hard thresholds:
+
+| Group | Threshold |
+|---|---|
+| Guardrail coverage | 100% |
+| Invoice extraction accuracy | 100% |
+| Forecasting eval | 100% |
+| Drift monitoring eval | 100% |
+| Overall pass rate | ≥ 95% |
+
+A non-zero exit code from `eval_gate.py` fails the workflow and blocks the merge.
 
 ---
 
@@ -163,6 +178,7 @@ See `.env.example` for the full list. Required variables:
 | [docs/NEW_FEATURES.md](docs/NEW_FEATURES.md) | Post-MVP feature changelog (confidence scoring, order review queue) |
 | [docs/NEW_FEATURES_2.md](docs/NEW_FEATURES_2.md) | Webhooks + drift detection changelog |
 | [docs/NEW_FEATURES_3.md](docs/NEW_FEATURES_3.md) | Multi-tenancy + super-admin + drift detection (full detail) |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml) | GitHub Actions CI Eval Gate — pytest + accuracy thresholds |
 | [docs/phases/](docs/phases/) | Build history: implementation plan + phase summaries |
 
 ---

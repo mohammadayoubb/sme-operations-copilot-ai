@@ -61,6 +61,30 @@ function ToolCallBadge({ tc, pending }: { tc: ToolCall; pending?: boolean }) {
   );
 }
 
+function renderMarkdown(text: string) {
+  return text.split("\n").map((line, i) => {
+    // ### Heading
+    if (line.startsWith("### ")) {
+      return <p key={i} style={{ fontWeight: 700, fontSize: 13, margin: "10px 0 4px", color: "var(--text)" }}>{line.slice(4)}</p>;
+    }
+    // ## Heading
+    if (line.startsWith("## ")) {
+      return <p key={i} style={{ fontWeight: 700, fontSize: 14, margin: "12px 0 4px", color: "var(--text)" }}>{line.slice(3)}</p>;
+    }
+    // Empty line → spacer
+    if (line.trim() === "") {
+      return <div key={i} style={{ height: 6 }} />;
+    }
+    // Inline **bold** parsing
+    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
+      part.startsWith("**") && part.endsWith("**")
+        ? <strong key={j}>{part.slice(2, -2)}</strong>
+        : part
+    );
+    return <p key={i} style={{ margin: "2px 0", lineHeight: 1.6, fontSize: 14 }}>{parts}</p>;
+  });
+}
+
 function MessageBubble({ msg }: { msg: DisplayMessage }) {
   const isUser = msg.role === "user";
   return (
@@ -73,7 +97,10 @@ function MessageBubble({ msg }: { msg: DisplayMessage }) {
         </div>
       )}
       {msg.content ? (
-        <p style={styles.bubbleText}>{msg.content}{msg.streaming ? <span style={styles.cursor}>▌</span> : null}</p>
+        <div style={styles.bubbleText}>
+          {isUser ? msg.content : renderMarkdown(msg.content)}
+          {msg.streaming ? <span style={styles.cursor}>▌</span> : null}
+        </div>
       ) : msg.streaming ? (
         <p style={{ ...styles.bubbleText, color: "var(--text-muted)" }}>
           <span style={styles.cursor}>▌</span>

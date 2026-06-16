@@ -114,7 +114,7 @@ exactly one layer, leaving all others untouched.
 | `report_service` | Python aggregation (sales, profit, margins), LLM narrative, report persistence, HTML/PDF export |
 | `agent_service` | GPT-4o tool-calling loop (up to 8 iterations), 7 read/write tools, streaming SSE output |
 | `anomaly_service` | Rolling z-score anomaly detection over daily sales, batch LLM explanation of flagged anomalies |
-| `drift_service` | PSI-based distribution shift detection over order features; persists `DriftSignal` rows |
+| `drift_service` | PSI-based distribution shift detection — 7-day recent sales vs. 60-day rolling baseline; adaptive binning; persists `DriftSignal` rows |
 | `admin_service` | Superadmin: list/create/delete tenants, per-tenant usage stats (no business_id scoping) |
 | `guardrails_service` | PII redaction, prompt injection detection (called by order, QA, voice, and agent services) |
 
@@ -275,6 +275,39 @@ GET /api/anomaly/alerts
           Fallback: window.speechSynthesis if TTS endpoint fails
 ```
 
+## AI Data Flow — ML Drift Monitor
+
+```
+POST /api/drift/run   (on-demand) or GET /api/drift/latest   (read last result)
+      │  query sales table: last 60 days as baseline, last 7 days as recent
+      │  compute_psi(baseline, recent)
+      │    └─► adaptive bins = min(10, max(2, len(recent) // 5))
+      │    └─► PSI < 0.10 → "stable" | 0.10–0.20 → "warning" | >0.20 → "alert"
+      │  persist DriftSignal row (psi_score, status, feature_stats JSONB)
+      └─► { psi, status, baseline_count, recent_count, run_at }
+          Dashboard: "Drift Monitor" panel — coloured badge + last-run timestamp
+```
+
+---
+
+## CI / Eval Gate
+
+```
+.github/workflows/ci.yml  (runs on every push + PR to main)
+      │
+      ├─ pytest tests/ --junitxml=test-results.xml
+      │     covers: guardrails · invoice extraction · forecasting · drift PSI
+      │
+      └─ python tests/eval_gate.py test-results.xml
+            enforces hard thresholds:
+              Guardrail coverage   100%
+              Extraction accuracy  100%
+              Forecasting eval     100%
+              Drift monitoring eval 100%
+              Overall pass rate    >= 95%
+            non-zero exit → workflow fails → merge blocked
+```
+
 ---
 
 ## Authentication & Multi-Tenant Isolation
@@ -282,7 +315,10 @@ GET /api/anomaly/alerts
 ### JWT flow
 
 ```
-POST /api/auth/login  →  { access_token, role, business_id }
+POST /api/auth/register  →  creates Business + User(owner) atomically
+POST /api/auth/login     →  tries DB user first, falls back to hardcoded admin
+                              │
+                         { access_token, role, business_id }
                               │
                          stored in browser localStorage
                               │

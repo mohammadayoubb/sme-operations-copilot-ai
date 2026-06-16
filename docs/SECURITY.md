@@ -168,10 +168,15 @@ properties:
 
 ## Authentication & Multi-Tenant Isolation
 
-### JWT Authentication
+### Registration & JWT Authentication
+
+New tenants register via `POST /api/auth/register` (business name + username + password).
+The handler creates a `Business` row and a `User(role=owner)` row in a single atomic
+transaction — either both succeed or neither does. A ready-to-use JWT is returned immediately.
 
 All business API routes require a Bearer JWT in the `Authorization` header.
-Tokens are issued by `POST /api/auth/login` and embed the caller's
+Tokens are issued by `POST /api/auth/login` (which tries DB users first, then falls back
+to the hardcoded demo admin so existing seed data stays accessible). Tokens embed the caller's
 `business_id` and `role`:
 
 ```
@@ -211,6 +216,24 @@ Before any order processing, the handler validates the `X-Twilio-Signature`
 header using HMAC-SHA1 over the full request URL and POST parameters,
 keyed with `TWILIO_AUTH_TOKEN`. Requests with an invalid signature are
 rejected with HTTP 403.
+
+---
+
+## CI Eval Gate — Security Test Enforcement
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs `tests/eval_gate.py`
+on every push. It enforces **100% pass rate** for the guardrail test group:
+
+| Test | What it checks |
+|---|---|
+| `test_detects_injection_attempts` | Known injection patterns are caught |
+| `test_clean_inputs_pass` | Safe inputs are not false-positived |
+| `test_redacts_phone_number` | Phone numbers stripped from logs |
+| `test_redacts_email` | Email addresses stripped from logs |
+| `test_clean_text_is_left_alone` | Redaction doesn't corrupt clean text |
+| `test_is_safe_input_contract` | Public API contract of `is_safe_input()` |
+
+A single guardrail test failure blocks the merge — security coverage cannot regress silently.
 
 ---
 

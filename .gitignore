@@ -58,3 +58,10 @@ celerybeat.pid
 print1.pdf
 generate_test_invoices.py
 webhook_trilio.md
+
+# TypeScript build cache
+frontend/tsconfig.tsbuildinfo
+
+# Dev/test files
+frontend/public/widget-drag-test.html
+sample_data/invoices/monopoly_restock_invoice.pdf
