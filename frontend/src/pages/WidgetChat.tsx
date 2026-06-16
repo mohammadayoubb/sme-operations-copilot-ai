@@ -51,6 +51,33 @@ function ToolBadge({ tc, pending }: { tc: ToolCall; pending?: boolean }) {
   );
 }
 
+function renderMarkdown(text: string, streaming?: boolean) {
+  const lines = text.split("\n");
+  const nodes = lines.map((line, i) => {
+    if (line.startsWith("### ")) {
+      return <p key={i} style={{ fontWeight: 700, fontSize: 12, margin: "8px 0 3px", color: "rgba(255,255,255,0.92)" }}>{line.slice(4)}</p>;
+    }
+    if (line.startsWith("## ")) {
+      return <p key={i} style={{ fontWeight: 700, fontSize: 13, margin: "10px 0 3px", color: "rgba(255,255,255,0.92)" }}>{line.slice(3)}</p>;
+    }
+    if (line.trim() === "") {
+      return <div key={i} style={{ height: 5 }} />;
+    }
+    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
+      part.startsWith("**") && part.endsWith("**")
+        ? <strong key={j}>{part.slice(2, -2)}</strong>
+        : part
+    );
+    return <p key={i} style={S.bubbleText}>{parts}</p>;
+  });
+  if (streaming) {
+    const last = nodes[nodes.length - 1] as any;
+    nodes[nodes.length - 1] = <span key="cursor" style={S.cursor}>▌</span>;
+    nodes.splice(nodes.length - 1, 0, last);
+  }
+  return nodes;
+}
+
 function Bubble({ msg }: { msg: DisplayMessage }) {
   const isUser = msg.role === "user";
   return (
@@ -62,11 +89,15 @@ function Bubble({ msg }: { msg: DisplayMessage }) {
           ))}
         </div>
       )}
-      {msg.content
-        ? <p style={S.bubbleText}>{msg.content}{msg.streaming && <span style={S.cursor}>▌</span>}</p>
-        : msg.streaming
-          ? <p style={{ ...S.bubbleText, color: "rgba(255,255,255,0.35)" }}><span style={S.cursor}>▌</span></p>
-          : null}
+      {isUser
+        ? msg.content
+          ? <p style={S.bubbleText}>{msg.content}</p>
+          : null
+        : msg.content
+          ? <>{renderMarkdown(msg.content, msg.streaming)}</>
+          : msg.streaming
+            ? <p style={{ ...S.bubbleText, color: "rgba(255,255,255,0.35)" }}><span style={S.cursor}>▌</span></p>
+            : null}
     </div>
   );
 }
