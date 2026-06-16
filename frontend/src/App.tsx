@@ -360,10 +360,7 @@ function MainLayout() {
 
       <nav style={sidebarStyle}>
         <div style={S.logo}>
-          <LogoIcon size={30} />
-          <span style={{ marginLeft: 10, fontWeight: 700, fontSize: 14, color: "rgba(255,255,255,0.9)", letterSpacing: "0.3px" }}>
-            SoukPilot <span style={{ color: "#818cf8" }}>AI</span>
-          </span>
+          <LogoIcon size={32} />
         </div>
 
         <ul style={S.navList}>

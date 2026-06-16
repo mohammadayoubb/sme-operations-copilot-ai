@@ -36,12 +36,7 @@ export default function Register() {
 
       <div style={S.card}>
         <div style={S.logoRow}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <LogoIcon size={42} />
-            <span style={{ fontWeight: 800, fontSize: 22, color: "rgba(255,255,255,0.92)", letterSpacing: "0.3px" }}>
-              SoukPilot <span style={{ color: "#818cf8" }}>AI</span>
-            </span>
-          </div>
+          <LogoIcon size={44} />
         </div>
 
         <p style={S.subtitle}>Create your business account</p>

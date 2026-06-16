@@ -197,7 +197,7 @@ export default function WidgetChat() {
           onClick={() => setOpen(true)}
           title="Open SoukPilot AI"
         >
-          <LogoIcon size={34} white={true} />
+          <LogoIcon size={34} iconOnly={true} white={true} />
         </button>
       </div>
     );
@@ -211,7 +211,7 @@ export default function WidgetChat() {
       {/* Header */}
       <div style={S.header}>
         <div style={S.headerLogo}>
-          <LogoIcon size={22} white={true} />
+          <LogoIcon size={22} iconOnly={true} white={true} />
           <span style={S.headerTitle}>SoukPilot AI</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
