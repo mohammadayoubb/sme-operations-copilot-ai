@@ -118,6 +118,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         resp = _client().audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
+            language="en",
         )
         transcript = resp.text.strip()
     except Exception as e:
