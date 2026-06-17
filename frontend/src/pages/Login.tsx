@@ -9,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showReset, setShowReset] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -79,10 +80,33 @@ export default function Login() {
         </form>
 
         <p style={S.switchRow}>
+          <button style={S.forgotBtn} onClick={() => setShowReset(true)}>
+            Forgot password?
+          </button>
+        </p>
+
+        <p style={S.switchRow}>
           New business?{" "}
           <a href="/register" style={S.link}>Create an account</a>
         </p>
       </div>
+
+      {/* Forgot password modal */}
+      {showReset && (
+        <div style={S.overlay} onClick={() => setShowReset(false)}>
+          <div style={S.modal} onClick={e => e.stopPropagation()}>
+            <div style={S.modalIcon}>🔑</div>
+            <h2 style={S.modalTitle}>Reset your password</h2>
+            <p style={S.modalBody}>
+              To reset your password, please contact your system administrator.
+              They can reset your credentials from the admin panel.
+            </p>
+            <button style={S.modalBtn} onClick={() => setShowReset(false)}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -196,5 +220,63 @@ const S: Record<string, React.CSSProperties> = {
     color: "#818cf8",
     textDecoration: "none",
     fontWeight: 500,
+  },
+  forgotBtn: {
+    background: "none",
+    border: "none",
+    color: "#818cf8",
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: "pointer",
+    padding: 0,
+  },
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.55)",
+    backdropFilter: "blur(4px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 100,
+  },
+  modal: {
+    background: "#0f1123",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 16,
+    padding: "36px 32px",
+    width: 340,
+    textAlign: "center",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 12,
+  },
+  modalIcon: {
+    fontSize: 32,
+    marginBottom: 4,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: 700,
+    color: "rgba(255,255,255,0.9)",
+    margin: 0,
+  },
+  modalBody: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.5)",
+    lineHeight: 1.6,
+    margin: 0,
+  },
+  modalBtn: {
+    marginTop: 8,
+    background: "#6366f1",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    padding: "10px 32px",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
   },
 };
