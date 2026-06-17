@@ -27,22 +27,25 @@ random.seed(42)
 
 DAYS = 60
 
+# anomaly="drop"  → near-zero sales in last 7 days  (triggers z < -2 alert)
+# anomaly="spike" → 4x normal sales in last 7 days  (triggers z > +2 alert)
+# Both also shift the 7-day distribution vs 60-day baseline → PSI > 0.20 (drift alert)
 PRODUCTS = {
-    "Monopoly Board Game":  dict(cost=8.50,  sell=15.00, reorder=10, stock=120, base=3.0,  weekend=1.5, noise=0.5),
-    "Power Bank 10000mAh":  dict(cost=15.00, sell=28.00, reorder=10, stock=80,  base=2.5,  weekend=1.0, noise=0.5),
-    "Pepsi 330ml":          dict(cost=0.42,  sell=0.75,  reorder=20, stock=360, base=12.0, weekend=4.0, noise=2.0),
-    "Lays Chips 45g":       dict(cost=0.80,  sell=1.25,  reorder=20, stock=150, base=8.0,  weekend=3.0, noise=1.5),
-    "Water 1.5L":           dict(cost=0.25,  sell=0.50,  reorder=15, stock=198, base=10.0, weekend=2.0, noise=2.0),
-    "Nutella 400g":         dict(cost=3.10,  sell=5.50,  reorder=10, stock=45,  base=3.2,  weekend=1.0, noise=0.8),
-    "Nescafe Classic 200g": dict(cost=4.20,  sell=7.00,  reorder=8,  stock=60,  base=2.5,  weekend=0.5, noise=0.5),
-    "Black Hoodie":         dict(cost=12.00, sell=25.00, reorder=8,  stock=40,  base=1.5,  weekend=1.0, noise=0.5),
-    "White T-Shirt":        dict(cost=5.50,  sell=12.00, reorder=8,  stock=35,  base=2.0,  weekend=1.5, noise=0.5),
-    "iPhone Charger":       dict(cost=4.00,  sell=9.00,  reorder=10, stock=55,  base=2.0,  weekend=0.5, noise=0.3),
-    "Bluetooth Earbuds":    dict(cost=18.00, sell=35.00, reorder=5,  stock=30,  base=1.0,  weekend=0.5, noise=0.3),
-    "Lego Classic Brick Set": dict(cost=22.00, sell=40.00, reorder=5, stock=25, base=0.8,  weekend=1.0, noise=0.3),
-    "Printed Tote Bag":     dict(cost=3.00,  sell=8.00,  reorder=10, stock=60,  base=1.5,  weekend=1.0, noise=0.4),
-    "Cap":                  dict(cost=4.00,  sell=10.00, reorder=8,  stock=40,  base=1.2,  weekend=0.8, noise=0.3),
-    "Jacket":               dict(cost=25.00, sell=55.00, reorder=5,  stock=20,  base=0.8,  weekend=0.5, noise=0.3),
+    "Monopoly Board Game":    dict(cost=8.50,  sell=15.00, reorder=10, stock=120, base=3.0,  weekend=1.5, noise=0.5),
+    "Power Bank 10000mAh":    dict(cost=15.00, sell=28.00, reorder=10, stock=80,  base=2.5,  weekend=1.0, noise=0.5),
+    "Pepsi 330ml":            dict(cost=0.42,  sell=0.75,  reorder=20, stock=360, base=12.0, weekend=4.0, noise=2.0, anomaly="spike"),
+    "Lays Chips 45g":         dict(cost=0.80,  sell=1.25,  reorder=20, stock=150, base=8.0,  weekend=3.0, noise=1.5),
+    "Water 1.5L":             dict(cost=0.25,  sell=0.50,  reorder=15, stock=198, base=10.0, weekend=2.0, noise=2.0),
+    "Nutella 400g":           dict(cost=3.10,  sell=5.50,  reorder=10, stock=45,  base=3.2,  weekend=1.0, noise=0.8, anomaly="drop"),
+    "Nescafe Classic 200g":   dict(cost=4.20,  sell=7.00,  reorder=8,  stock=60,  base=2.5,  weekend=0.5, noise=0.5),
+    "Black Hoodie":           dict(cost=12.00, sell=25.00, reorder=8,  stock=40,  base=1.5,  weekend=1.0, noise=0.5),
+    "White T-Shirt":          dict(cost=5.50,  sell=12.00, reorder=8,  stock=35,  base=2.0,  weekend=1.5, noise=0.5),
+    "iPhone Charger":         dict(cost=4.00,  sell=9.00,  reorder=10, stock=55,  base=2.0,  weekend=0.5, noise=0.3),
+    "Bluetooth Earbuds":      dict(cost=18.00, sell=35.00, reorder=5,  stock=30,  base=1.0,  weekend=0.5, noise=0.3),
+    "Lego Classic Brick Set": dict(cost=22.00, sell=40.00, reorder=5,  stock=25,  base=0.8,  weekend=1.0, noise=0.3),
+    "Printed Tote Bag":       dict(cost=3.00,  sell=8.00,  reorder=10, stock=60,  base=1.5,  weekend=1.0, noise=0.4),
+    "Cap":                    dict(cost=4.00,  sell=10.00, reorder=8,  stock=40,  base=1.2,  weekend=0.8, noise=0.3),
+    "Jacket":                 dict(cost=25.00, sell=55.00, reorder=5,  stock=20,  base=0.8,  weekend=0.5, noise=0.3),
 }
 
 ORDERS = [
@@ -68,7 +71,18 @@ ORDERS = [
 ]
 
 
+_ANOMALY_START = date.today() - timedelta(days=7)
+
+
 def _daily_qty(cfg, d: date) -> int:
+    anomaly = cfg.get("anomaly")
+    if anomaly and d >= _ANOMALY_START:
+        if anomaly == "drop":
+            # Near-zero sales — clear below-baseline signal
+            return max(0, round(random.gauss(0.2, 0.2)))
+        if anomaly == "spike":
+            # 4× normal — clear above-baseline signal
+            return max(0, round(cfg["base"] * 4 + random.gauss(0, cfg["noise"])))
     weekend = cfg["weekend"] if d.weekday() >= 5 else 0.0
     return max(0, round(cfg["base"] + weekend + random.gauss(0, cfg["noise"])))
 
@@ -294,6 +308,15 @@ def main():
             print(f"[10] RAG reindexed: {idx['documents_indexed']} docs, {idx['chunks_indexed']} chunks")
         except Exception as e:
             print(f"[10] RAG reindex skipped: {e}")
+
+        # ── 11. Drift check ───────────────────────────────────────────────────
+        try:
+            from app.services import drift_service
+            sig = drift_service.run_drift_check(db)
+            db.commit()
+            print(f"[11] Drift check: PSI={sig.psi_score:.4f} status={sig.status}")
+        except Exception as e:
+            print(f"[11] Drift check skipped: {e}")
 
         # ── Summary ───────────────────────────────────────────────────────────
         print("\nStock summary:")
