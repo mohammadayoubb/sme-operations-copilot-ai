@@ -46,8 +46,8 @@ _ARABIC_RE = re.compile(r'[؀-ۿ]')
 def _lang_reminder(message: str) -> str:
     """Return a system-role language reminder injected right before the user's turn."""
     if _ARABIC_RE.search(message):
-        return "LANGUAGE RULE: The owner just wrote/spoke in Arabic. Your reply MUST be entirely in Arabic. Do not use English at all."
-    return "LANGUAGE RULE: The owner just wrote/spoke in English. Your reply MUST be entirely in English. Do not use Arabic at all."
+        return "CRITICAL LANGUAGE RULE: The owner just wrote/spoke in Arabic. Your ENTIRE reply MUST be in Arabic. Do not use any English words at all, regardless of the conversation history."
+    return "CRITICAL LANGUAGE RULE: The owner just wrote/spoke in English. Your ENTIRE reply MUST be in English. Do not use any Arabic words at all, even if previous messages were in Arabic."
 
 # ── Tool definitions (OpenAI function-calling schema) ──────────────────────
 
@@ -275,11 +275,11 @@ def _get_price_history(db: Session, business_id: int, product_name: str) -> dict
     }
 
 
-def _create_order(db: Session, message: str) -> dict:
+def _create_order(db: Session, business_id: int, message: str) -> dict:
     from app.services.order_service import GuardrailError, extract_and_create_order
 
     try:
-        order = extract_and_create_order(db, message, source="agent")
+        order = extract_and_create_order(db, message, source="agent", business_id=business_id)
         db.commit()
         items = order_repo.get_items(db, order.id)
         return {
@@ -318,7 +318,7 @@ def _execute_tool(db: Session, business_id: int, name: str, args: dict) -> Any:
         if name == "get_price_history":
             return _get_price_history(db, business_id, args.get("product_name", ""))
         if name == "create_order":
-            return _create_order(db, args.get("message", ""))
+            return _create_order(db, business_id, args.get("message", ""))
         return {"error": f"Unknown tool: {name}"}
     except Exception as exc:  # noqa: BLE001
         # A single tool failure must never kill the whole agent turn — return the
