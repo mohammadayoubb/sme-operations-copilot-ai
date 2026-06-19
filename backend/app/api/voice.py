@@ -127,11 +127,16 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         resp = _client().audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
+            response_format="verbose_json",
         )
         transcript = resp.text.strip()
-        # Detect language of the transcribed text
-        detected_lang = _detect_language(transcript)
-        logger.info("voice_language_detected", transcript_chars=len(transcript), detected=detected_lang)
+        whisper_lang = (resp.language or "").lower()
+        # If Whisper thinks it's Arabic, keep the transcript as-is so the agent
+        # detects Arabic script. Otherwise strip any accidental Arabic characters
+        # so the agent treats it as French.
+        if "arab" not in whisper_lang:
+            transcript = _ARABIC_SCRIPT.sub("", transcript).strip()
+        logger.info("voice_transcribed", chars=len(transcript), whisper_lang=whisper_lang)
     except Exception as e:
         logger.error("voice_transcription_failed", error=str(e), ext=ext)
         raise HTTPException(502, f"Transcription failed: {str(e)}")
