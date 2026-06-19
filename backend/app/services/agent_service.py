@@ -47,7 +47,7 @@ def _lang_reminder(message: str) -> str:
     """Return a system-role language reminder injected right before the user's turn."""
     if _ARABIC_RE.search(message):
         return "CRITICAL LANGUAGE RULE: The owner just wrote/spoke in Arabic. Your ENTIRE reply MUST be in Arabic. Do not use any French or English words at all, regardless of the conversation history."
-    return "CRITICAL LANGUAGE RULE: The owner just wrote/spoke in French. Your ENTIRE reply MUST be in French. Do not use any Arabic words at all, even if previous messages were in Arabic."
+    return "CRITICAL LANGUAGE RULE: The owner just wrote/spoke in English. Your ENTIRE reply MUST be in English. Do not use any Arabic words at all, even if previous messages were in Arabic."
 
 # ── Tool definitions (OpenAI function-calling schema) ──────────────────────
 
