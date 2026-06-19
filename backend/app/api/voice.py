@@ -28,6 +28,15 @@ _TENS     = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون',
 _HUNDREDS = ['', 'مائة', 'مئتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة']
 
 
+def _detect_language(text: str) -> str:
+    """Detect if text is Arabic or English based on script."""
+    if not text:
+        return "unknown"
+    if _ARABIC_SCRIPT.search(text):
+        return "arabic"
+    return "english"
+
+
 def _int_to_arabic(n: int) -> str:
     if n < 0:
         return 'سالب ' + _int_to_arabic(-n)
@@ -118,9 +127,11 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         resp = _client().audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
-            language="en",
         )
         transcript = resp.text.strip()
+        # Detect language of the transcribed text
+        detected_lang = _detect_language(transcript)
+        logger.info("voice_language_detected", transcript_chars=len(transcript), detected=detected_lang)
     except Exception as e:
         logger.error("voice_transcription_failed", error=str(e), ext=ext)
         raise HTTPException(502, f"Transcription failed: {str(e)}")
