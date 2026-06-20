@@ -21,15 +21,41 @@ from fastapi import APIRouter, Form, Header, HTTPException, Request, Depends
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from sqlalchemy import select
+
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
+from app.models.user import User
 from app.repositories import order_repo
 from app.services.order_service import GuardrailError, extract_and_create_order
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/webhooks", tags=["Webhooks"])
+
+# The Twilio WhatsApp sandbox is a single shared number, so every inbound message
+# hits this one webhook. We route all WhatsApp orders to one tenant, resolved by
+# the owner's (stable) username rather than a hardcoded id — ids differ between
+# local/Railway and can change on reseed. Change this string to repoint WhatsApp
+# to a different account.
+WHATSAPP_OWNER_USERNAME = "souk_tripoli"
+_FALLBACK_BUSINESS_ID = 1
+
+
+def _resolve_whatsapp_business_id(db: Session) -> int:
+    """Business that inbound WhatsApp orders are filed under."""
+    owner = db.execute(
+        select(User).where(User.username == WHATSAPP_OWNER_USERNAME)
+    ).scalar_one_or_none()
+    if owner and owner.business_id:
+        return owner.business_id
+    logger.warning(
+        "whatsapp_owner_unresolved",
+        username=WHATSAPP_OWNER_USERNAME,
+        fallback=_FALLBACK_BUSINESS_ID,
+    )
+    return _FALLBACK_BUSINESS_ID
 
 
 # ── Twilio signature validation ──────────────────────────────────────────────
@@ -95,10 +121,18 @@ async def whatsapp_webhook(
     if not message_text:
         return _twiml_message("Hello! Send us your order and we'll process it right away.")
 
-    logger.info("whatsapp_inbound", from_number=sender, body_len=len(message_text))
+    business_id = _resolve_whatsapp_business_id(db)
+    logger.info(
+        "whatsapp_inbound",
+        from_number=sender,
+        body_len=len(message_text),
+        business_id=business_id,
+    )
 
     try:
-        order = extract_and_create_order(db, message_text, source="whatsapp")
+        order = extract_and_create_order(
+            db, message_text, source="whatsapp", business_id=business_id
+        )
         db.commit()
 
         intent = (order.extracted_json or {}).get("intent", "unknown")

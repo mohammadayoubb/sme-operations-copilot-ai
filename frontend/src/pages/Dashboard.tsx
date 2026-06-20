@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
-import { anomalyApi, driftApi, forecastApi, invoicesApi, ordersApi, productsApi, reportsApi } from "../services/api";
+import { anomalyApi, forecastApi, invoicesApi, ordersApi, productsApi, reportsApi } from "../services/api";
 
 interface Product { id: number; name: string; current_stock: number | null; reorder_level: number | null; }
 interface OrderRow { id: number; status: string; }
@@ -8,7 +8,6 @@ interface InvoiceRow { id: number; invoice_date: string | null; invoice_total: n
 interface Forecast { product_id: number; product_name: string; current_stock: number; days_until_stockout: number | null; reorder_by_date: string | null; }
 interface LatestReport { data_json: { sales: { this_week: number; change_pct: number | null }; profit: { this_week: number; change_pct: number | null } } | null; }
 interface AnomalyAlert { product_name: string; anomaly_date: string; direction: string; actual_qty: number; expected_qty: number; pct_deviation: number; explanation: string; }
-interface DriftSignal { id: number; run_at: string; psi_score: number; status: string; baseline_days: number | null; recent_days: number | null; }
 
 function ChangeBadge({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return null;
@@ -27,8 +26,6 @@ export default function Dashboard() {
   const [reorders, setReorders] = useState<Forecast[]>([]);
   const [report, setReport] = useState<LatestReport | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyAlert[]>([]);
-  const [drift, setDrift] = useState<DriftSignal | null>(null);
-  const [driftRunning, setDriftRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,14 +57,6 @@ export default function Dashboard() {
           setAnomalies(a.data.alerts ?? []);
         } catch {
           /* anomaly scan failed — panel stays hidden */
-        }
-
-        // Drift signal — non-blocking, best-effort
-        try {
-          const d = await driftApi.latest();
-          setDrift(d.data ?? null);
-        } catch {
-          /* no drift signal yet — panel stays hidden */
         }
       } catch (e: any) {
         setError(e?.response?.data?.detail ?? "Failed to load dashboard data.");
@@ -225,76 +214,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Drift Monitor — always visible */}
-      <div style={{
-        ...styles.panel,
-        borderLeft: `3px solid ${!drift ? "var(--border)" : drift.status === "alert" ? "#ef4444" : drift.status === "warning" ? "#f59e0b" : "#34d399"}`,
-        marginTop: 16,
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ ...styles.panelTitle, marginBottom: 0 }}>
-            ML Drift Monitor
-            {drift && (
-              <span style={{
-                ...styles.anomalyBadge,
-                background: drift.status === "alert" ? "#ef444422" : drift.status === "warning" ? "#f59e0b22" : "#34d39922",
-                color: drift.status === "alert" ? "#ef4444" : drift.status === "warning" ? "#f59e0b" : "#34d399",
-              }}>
-                {drift.status.toUpperCase()}
-              </span>
-            )}
-          </h3>
-          <button
-            onClick={async () => {
-              setDriftRunning(true);
-              try {
-                const d = await driftApi.run();
-                setDrift(d.data);
-              } finally {
-                setDriftRunning(false);
-              }
-            }}
-            disabled={driftRunning}
-            style={styles.driftBtn}
-          >
-            {driftRunning ? "Running…" : "Run Check"}
-          </button>
-        </div>
-
-        {!drift ? (
-          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No drift check run yet. Click "Run Check" to analyse sales distribution.</p>
-        ) : (
-          <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "center" }}>
-            <div>
-              <p style={{ color: "var(--text-muted)", fontSize: 11, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>PSI Score</p>
-              <p style={{ fontSize: 28, fontWeight: 700, color: drift.status === "alert" ? "#ef4444" : drift.status === "warning" ? "#f59e0b" : "#34d399" }}>
-                {drift.psi_score.toFixed(3)}
-              </p>
-            </div>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                {[{ label: "Stable", max: 0.10, color: "#34d399" }, { label: "Warning", max: 0.20, color: "#f59e0b" }, { label: "Alert", max: null, color: "#ef4444" }].map((band) => (
-                  <div key={band.label} style={{ flex: 1, background: drift.status === band.label.toLowerCase() ? `${band.color}33` : "var(--surface2)", borderRadius: 4, padding: "6px 10px", border: `1px solid ${drift.status === band.label.toLowerCase() ? band.color : "var(--border)"}` }}>
-                    <p style={{ fontSize: 10, color: band.color, fontWeight: 700 }}>{band.label}</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{band.max != null ? `PSI < ${band.max}` : `PSI ≥ 0.20`}</p>
-                  </div>
-                ))}
-              </div>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                Comparing last {drift.recent_days ?? 7}d sales vs {drift.baseline_days ?? 60}d baseline · Last run {new Date(drift.run_at).toLocaleString()}
-              </p>
-              {drift.status !== "stable" && (
-                <p style={{ fontSize: 12, color: drift.status === "alert" ? "#ef4444" : "#f59e0b", marginTop: 6, fontWeight: 500 }}>
-                  {drift.status === "alert"
-                    ? "Significant distribution shift detected — consider retraining the forecasting model."
-                    : "Moderate distribution shift — monitor closely over the next few days."}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
     </PageShell>
   );
 }
@@ -341,5 +260,4 @@ const styles: Record<string, React.CSSProperties> = {
   anomalyName: { fontWeight: 600, fontSize: 13, display: "block" },
   anomalyMeta: { fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 2 },
   anomalyExplanation: { fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginLeft: 28 },
-  driftBtn: { background: "#6366f1", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" as const },
 };

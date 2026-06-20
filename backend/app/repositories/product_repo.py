@@ -41,7 +41,7 @@ def get_or_create_supplier(db: Session, business_id: int, name: Optional[str]) -
 
 def match_or_create_product(db: Session, business_id: int, raw_name: str) -> Product:
     """Fuzzy-match an extracted product name to an existing product, else create."""
-    from rapidfuzz import fuzz, process
+    from rapidfuzz import fuzz, process, utils
 
     candidates = db.execute(
         select(Product).where(Product.business_id == business_id)
@@ -50,7 +50,8 @@ def match_or_create_product(db: Session, business_id: int, raw_name: str) -> Pro
     if candidates:
         names = {p.id: p.name for p in candidates}
         best = process.extractOne(
-            raw_name, names, scorer=fuzz.token_sort_ratio
+            raw_name, names, scorer=fuzz.partial_ratio,
+            processor=utils.default_process,
         )
         if best and best[1] >= _MATCH_THRESHOLD:
             matched_id = best[2]
