@@ -9,6 +9,7 @@ from app.models.document import Document
 from app.models.report import Report
 from app.models.insight import Alert, AIInsight
 from app.models.drift import DriftSignal
+from app.models.password_reset import PasswordResetToken
 
 __all__ = [
     "Business",
@@ -26,4 +27,5 @@ __all__ = [
     "Alert",
     "AIInsight",
     "DriftSignal",
+    "PasswordResetToken",
 ]
