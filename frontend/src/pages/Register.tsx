@@ -8,6 +8,7 @@ export default function Register() {
   const [businessName, setBusinessName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +17,7 @@ export default function Register() {
     setError(null);
     setLoading(true);
     try {
-      const res = await authApi.register(businessName, username, password);
+      const res = await authApi.register(businessName, username, password, email || undefined);
       localStorage.setItem("soukpilot_token", res.data.access_token);
       localStorage.setItem("soukpilot_username", res.data.username);
       localStorage.setItem("soukpilot_business", businessName);
@@ -77,6 +78,18 @@ export default function Register() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
+            />
+          </div>
+
+          <div style={S.field}>
+            <label style={S.label}>Email <span style={{ color: "rgba(255,255,255,0.25)", fontWeight: 400, textTransform: "none" }}>(optional — for password reset)</span></label>
+            <input
+              style={S.input}
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
             />
           </div>
 

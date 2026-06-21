@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     twilio_auth_token: str = ""
     twilio_whatsapp_from: str = "whatsapp:+14155238886"  # Twilio sandbox default
 
+    # Email / SMTP (Gmail — leave blank to skip email sending in dev)
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""        # your Gmail address
+    smtp_password: str = ""    # Gmail App Password
+    smtp_from: str = ""        # e.g. "SoukPilot <yourapp@gmail.com>"
+    app_url: str = "http://localhost:5173"  # frontend base URL for reset links
+
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]

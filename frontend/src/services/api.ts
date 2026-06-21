@@ -36,11 +36,15 @@ export const authApi = {
       "/api/auth/login",
       { username, password }
     ),
-  register: (businessName: string, username: string, password: string) =>
+  register: (businessName: string, username: string, password: string, email?: string) =>
     http.post<{ access_token: string; token_type: string; username: string; business_id: number }>(
       "/api/auth/register",
-      { business_name: businessName, username, password }
+      { business_name: businessName, username, password, email: email || undefined }
     ),
+  forgotPassword: (email: string) =>
+    http.post("/api/auth/forgot-password", { email }),
+  resetPassword: (token: string, new_password: string) =>
+    http.post("/api/auth/reset-password", { token, new_password }),
 };
 
 export const invoicesApi = {

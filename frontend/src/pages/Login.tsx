@@ -10,6 +10,10 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -93,17 +97,62 @@ export default function Login() {
 
       {/* Forgot password modal */}
       {showReset && (
-        <div style={S.overlay} onClick={() => setShowReset(false)}>
+        <div style={S.overlay} onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); setResetError(null); }}>
           <div style={S.modal} onClick={e => e.stopPropagation()}>
-            <div style={S.modalIcon}>🔑</div>
-            <h2 style={S.modalTitle}>Reset your password</h2>
-            <p style={S.modalBody}>
-              To reset your password, please contact your system administrator.
-              They can reset your credentials from the admin panel.
-            </p>
-            <button style={S.modalBtn} onClick={() => setShowReset(false)}>
-              Got it
-            </button>
+            {resetSent ? (
+              <>
+                <div style={S.modalIcon}>📬</div>
+                <h2 style={S.modalTitle}>Check your email</h2>
+                <p style={S.modalBody}>
+                  If <strong>{resetEmail}</strong> is registered, you'll receive a reset link shortly. It expires in 1 hour.
+                </p>
+                <button style={S.modalBtn} onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}>
+                  Done
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={S.modalIcon}>🔑</div>
+                <h2 style={S.modalTitle}>Reset your password</h2>
+                <p style={S.modalBody}>Enter your account email and we'll send you a reset link.</p>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setResetError(null);
+                    setResetLoading(true);
+                    try {
+                      await authApi.forgotPassword(resetEmail);
+                      setResetSent(true);
+                    } catch {
+                      setResetError("Something went wrong. Please try again.");
+                    } finally {
+                      setResetLoading(false);
+                    }
+                  }}
+                  style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12 }}
+                >
+                  <input
+                    style={S.modalInput}
+                    type="email"
+                    placeholder="you@example.com"
+                    value={resetEmail}
+                    onChange={e => setResetEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                  {resetError && <p style={{ color: "#ef4444", fontSize: 12, margin: 0 }}>{resetError}</p>}
+                  <button style={{ ...S.modalBtn, opacity: resetLoading ? 0.6 : 1 }} type="submit" disabled={resetLoading}>
+                    {resetLoading ? "Sending…" : "Send reset link"}
+                  </button>
+                </form>
+                <button
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 12, cursor: "pointer", marginTop: 4 }}
+                  onClick={() => setShowReset(false)}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -267,6 +316,17 @@ const S: Record<string, React.CSSProperties> = {
     color: "rgba(255,255,255,0.5)",
     lineHeight: 1.6,
     margin: 0,
+  },
+  modalInput: {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 8,
+    padding: "10px 14px",
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box" as const,
   },
   modalBtn: {
     marginTop: 8,

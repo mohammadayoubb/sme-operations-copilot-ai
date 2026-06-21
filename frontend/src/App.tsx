@@ -15,6 +15,7 @@ import VoiceAssistant from "./pages/VoiceAssistant";
 import AgentChat from "./pages/AgentChat";
 import WidgetChat from "./pages/WidgetChat";
 import WidgetSettings from "./pages/WidgetSettings";
+import ResetPassword from "./pages/ResetPassword";
 
 // ── SVG icon helper ──────────────────────────────────────────────────────────
 
@@ -425,8 +426,9 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public standalone routes */}
-        <Route path="/login"       element={<Login />} />
-        <Route path="/register"    element={<Register />} />
+        <Route path="/login"           element={<Login />} />
+        <Route path="/register"        element={<Register />} />
+        <Route path="/reset-password"  element={<ResetPassword />} />
         <Route path="/widget"      element={<WidgetChat />} />
         <Route path="/superadmin"  element={<SuperAdmin />} />
         {/* Everything else requires auth and gets the full shell */}
