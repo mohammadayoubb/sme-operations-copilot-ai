@@ -1,5 +1,10 @@
 # SoukPilot AI
 
+#Demo
+<img width="1365" height="627" alt="Screenshot 2026-06-24 200307" src="https://github.com/user-attachments/assets/b1f2da3e-0086-48df-9ed5-fff6b2526a1c" />
+
+[https://youtu.be/jaHVVzf_XCg
+]([url](https://youtu.be/jaHVVzf_XCg?si=eIkolc6o4RPnJt5k))
 **AI-first operations copilot for Lebanese SMEs.**
 
 SoukPilot AI turns the messy day-to-day reality of running a small business —
