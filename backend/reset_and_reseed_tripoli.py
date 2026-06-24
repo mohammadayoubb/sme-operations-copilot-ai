@@ -44,6 +44,8 @@ from app.models.sales import Sale
 
 random.seed(42)
 
+TARGET_USERNAME = sys.argv[1] if len(sys.argv) > 1 else "souk_tripoli"
+
 DAYS = 60
 
 # ─── Product catalogue ────────────────────────────────────────────────────────
@@ -234,7 +236,7 @@ def main():
         # to a name search on "tripoli".
         from app.models.user import User
         owner = db.execute(
-            select(User).where(func.lower(User.username) == "souk_tripoli")
+            select(User).where(func.lower(User.username) == TARGET_USERNAME.lower())
         ).scalar_one_or_none()
         business = db.get(Business, owner.business_id) if owner and owner.business_id else None
         if business is None:
@@ -242,7 +244,7 @@ def main():
                 select(Business).where(func.lower(Business.name).contains("tripoli"))
             ).scalar_one_or_none()
         if business is None:
-            raise RuntimeError("souk_tripoli business not found — check the username/business name.")
+            raise RuntimeError(f"{TARGET_USERNAME} business not found — check the username/business name.")
 
         bid = business.id
         print(f"Business: '{business.name}' (id={bid})")
