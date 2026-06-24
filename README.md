@@ -5,7 +5,7 @@ Click the image below to watch the full demo:
 
 [![SoukPilot AI Demo](https://github.com/user-attachments/assets/b1f2da3e-0086-48df-9ed5-fff6b2526a1c)](https://youtu.be/jaHVVzf_XCg?si=eIkolc6o4RPnJt5k)
 
-**Live deployment:** [soukpilot.up.railway.app](https://soukpilot.up.railway.app)
+**Live deployment:** [soukpilot.up.railway.app]([https://soukpilot.up.railway.app](https://miraculous-creativity-production.up.railway.app/))
 
 **AI-first operations copilot for Lebanese SMEs.**
 
